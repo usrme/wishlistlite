@@ -5,7 +5,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"regexp"
+	"syscall"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -89,7 +91,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.choice != "" {
-		return quitTextStyle.Render(fmt.Sprintf("Connecting to '%s'...", m.choice))
+		binary, lookErr := exec.LookPath("ssh")
+		if lookErr != nil {
+			panic(lookErr)
+		}
+
+		args := []string{"ssh", m.choice}
+		env := os.Environ()
+
+		execErr := syscall.Exec(binary, args, env)
+		if execErr != nil {
+			panic(execErr)
+		}
+		// return quitTextStyle.Render(fmt.Sprintf("Connecting to '%s'...", m.choice))
 	}
 	if m.quitting {
 		return quitTextStyle.Render("Quitting.")
