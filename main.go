@@ -100,6 +100,7 @@ func (m model) View() string {
 }
 
 func main() {
+	// TODO: Read home directory automatically
 	content, err := ioutil.ReadFile("/home/usrme/.ssh/config")
 	if err != nil {
 		fmt.Println("Err")
