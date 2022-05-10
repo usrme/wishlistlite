@@ -7,13 +7,14 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"syscall"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-const listHeight = 14
+const listHeight = 18
 
 var (
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
@@ -70,7 +71,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
-		case "ctrl+c":
+		case "ctrl+c", "q", "esc":
 			m.quitting = true
 			return m, tea.Quit
 
@@ -90,15 +91,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.choice != "" {
-		cmd := exec.Command("ssh", m.choice)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		err := cmd.Run()
-		if err != nil {
-			panic(err)
-		}
+		return quitTextStyle.Render(fmt.Sprintf("Connecting to '%s'...", m.choice))
 	}
 	if m.quitting {
 		return quitTextStyle.Render("Quitting.")
@@ -129,10 +122,26 @@ func main() {
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = helpStyle
 
-	m := model{list: l}
+	p := tea.NewProgram(model{list: l})
 
-	if err := tea.NewProgram(m).Start(); err != nil {
-		fmt.Println("Error running program:", err)
+	m, err := p.StartReturningModel()
+	if err != nil {
+		fmt.Println("Oh no:", err)
 		os.Exit(1)
+	}
+
+	if m, ok := m.(model); ok && m.choice != "" {
+		binary, lookErr := exec.LookPath("ssh")
+		if lookErr != nil {
+			panic(lookErr)
+		}
+
+		args := []string{"ssh", m.choice}
+		env := os.Environ()
+
+		execErr := syscall.Exec(binary, args, env)
+		if execErr != nil {
+			panic(execErr)
+		}
 	}
 }
