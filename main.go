@@ -38,12 +38,11 @@ func (i item) Description() string { return i.hostname }
 func (i item) FilterValue() string { return i.host }
 
 type model struct {
-	list         list.Model
-	items        []item
-	choice       string
-	quitting     bool
-	keys         *listKeyMap
-	delegateKeys *delegateKeyMap
+	list     list.Model
+	items    []item
+	choice   string
+	quitting bool
+	keys     *listKeyMap
 }
 
 type listKeyMap struct {
@@ -96,14 +95,13 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 
 func newModel() model {
 	var (
-		delegateKeys = newDelegateKeyMap()
-		listKeys     = newListKeyMap()
+		listKeys = newListKeyMap()
 	)
 
 	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	items, _ := getHostsFromSshConfig(sshConfigPath)
 
-	delegate := newItemDelegate(delegateKeys)
+	delegate := newItemDelegate()
 	hostList := list.New(items, delegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
@@ -115,9 +113,8 @@ func newModel() model {
 	}
 
 	return model{
-		list:         hostList,
-		keys:         listKeys,
-		delegateKeys: delegateKeys,
+		list: hostList,
+		keys: listKeys,
 	}
 }
 
@@ -146,7 +143,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch {
 		case key.Matches(msg, m.keys.input):
-			return m, nil
+			statusCmd := m.list.NewStatusMessage(statusMessageStyle("Pressed"))
+			return m, statusCmd
 		}
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
