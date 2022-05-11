@@ -14,7 +14,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const listHeight = 18
+const (
+	listHeight    = 18
+	sshExecutable = "ssh"
+)
 
 var (
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
@@ -99,8 +102,24 @@ func (m model) View() string {
 	return "\n" + m.list.View()
 }
 
+func verifyExecutable(execName string) string {
+	path, err := exec.LookPath(execName)
+	if err != nil {
+		panic(err)
+	}
+	return path
+}
+
+func runExecutable(execPath string, args []string) {
+	env := os.Environ()
+	err := syscall.Exec(execPath, args, env)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
-	// TODO: Read home directory automatically
+	execPath := verifyExecutable(sshExecutable)
 	content, err := ioutil.ReadFile("/home/usrme/.ssh/config")
 	if err != nil {
 		fmt.Println("Err")
@@ -132,17 +151,6 @@ func main() {
 	}
 
 	if m, ok := m.(model); ok && m.choice != "" {
-		binary, lookErr := exec.LookPath("ssh")
-		if lookErr != nil {
-			panic(lookErr)
-		}
-
-		args := []string{"ssh", m.choice}
-		env := os.Environ()
-
-		execErr := syscall.Exec(binary, args, env)
-		if execErr != nil {
-			panic(execErr)
-		}
+		runExecutable(execPath, []string{sshExecutable, m.choice})
 	}
 }
