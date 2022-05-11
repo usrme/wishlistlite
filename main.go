@@ -92,18 +92,8 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-func runExecutable(execPath string, args []string) {
-	env := os.Environ()
-	err := syscall.Exec(execPath, args, env)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func main() {
-	execPath := verifyExecutable(sshExecutable)
-	sshConfig := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
-	content, err := ioutil.ReadFile(sshConfig)
+func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
+	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Println("Err")
 	}
@@ -115,6 +105,22 @@ func main() {
 		host := item{host: match[1], hostname: match[2]}
 		items = append(items, host)
 	}
+
+	return items, nil
+}
+
+func runExecutable(execPath string, args []string) {
+	env := os.Environ()
+	err := syscall.Exec(execPath, args, env)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+	execPath := verifyExecutable(sshExecutable)
+	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
+	items, _ := getHostsFromSshConfig(sshConfigPath)
 
 	md := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
 	md.list.Title = "Wishlist Lite"
