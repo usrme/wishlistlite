@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -15,46 +14,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	listHeight    = 18
-	sshExecutable = "ssh"
-)
+const sshExecutable = "ssh"
 
-var (
-	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("150"))
-	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
-	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
-	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
-)
+var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
-type item string
-
-func (i item) FilterValue() string { return "" }
-
-type itemDelegate struct{}
-
-func (d itemDelegate) Height() int                               { return 1 }
-func (d itemDelegate) Spacing() int                              { return 0 }
-func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(item)
-	if !ok {
-		return
-	}
-
-	str := fmt.Sprintf("%d. %s", index+1, i)
-
-	fn := itemStyle.Render
-	if index == m.Index() {
-		fn = func(s string) string {
-			return selectedItemStyle.Render("> " + s)
-		}
-	}
-
-	fmt.Fprintf(w, fn(str))
+type item struct {
+	host, hostname string
 }
+
+func (i item) Title() string       { return i.host }
+func (i item) Description() string { return i.hostname }
+func (i item) FilterValue() string { return i.host }
 
 type model struct {
 	list     list.Model
@@ -69,10 +39,6 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.list.SetWidth(msg.Width)
-		return m, nil
-
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "ctrl+c", "q", "esc":
@@ -82,10 +48,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
-				m.choice = string(i)
+				m.choice = string(i.host)
 			}
 			return m, tea.Quit
 		}
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 
 	var cmd tea.Cmd
@@ -94,13 +63,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	if m.choice != "" {
-		return quitTextStyle.Render(fmt.Sprintf("Connecting to '%s'...", m.choice))
-	}
-	if m.quitting {
-		return quitTextStyle.Render("Quitting.")
-	}
-	return "\n" + m.list.View()
+	return docStyle.Render(m.list.View())
 }
 
 func verifyExecutable(execName string) string {
@@ -149,20 +112,14 @@ func main() {
 	matches := pat.FindAllStringSubmatch(string(content), -1)
 	var items []list.Item
 	for _, match := range matches {
-		items = append(items, item(match[1]))
+		host := item{host: match[1], hostname: match[2]}
+		items = append(items, host)
 	}
 
-	const defaultWidth = 80
+	md := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
+	md.list.Title = "Wishlist Lite"
 
-	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
-	l.Title = "Which host to connect to?"
-	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
-	l.Styles.Title = titleStyle
-	l.Styles.PaginationStyle = paginationStyle
-	l.Styles.HelpStyle = helpStyle
-
-	p := tea.NewProgram(model{list: l})
+	p := tea.NewProgram(md, tea.WithAltScreen())
 
 	m, err := p.StartReturningModel()
 	if err != nil {
