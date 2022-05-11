@@ -107,6 +107,7 @@ func newModel() model {
 	hostList := list.New(items, delegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
+	// TODO: Figure out why styling 'hostList.Styles.FilterPrompt' doesn't work like 'hostList.Styles.Title'
 	hostList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.input,
