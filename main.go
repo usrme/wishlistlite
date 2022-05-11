@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"syscall"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -16,7 +17,17 @@ import (
 
 const sshExecutable = "ssh"
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
+var (
+	docStyle   = lipgloss.NewStyle().Margin(1, 2)
+	titleStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#fffdf5ff")).
+			Background(lipgloss.Color("#5e81ac")).
+			Padding(0, 1)
+
+	statusMessageStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
+				Render
+)
 
 type item struct {
 	host, hostname string
@@ -27,10 +38,51 @@ func (i item) Description() string { return i.hostname }
 func (i item) FilterValue() string { return i.host }
 
 type model struct {
-	list     list.Model
-	items    []item
-	choice   string
-	quitting bool
+	list         list.Model
+	items        []item
+	choice       string
+	quitting     bool
+	keys         *listKeyMap
+	delegateKeys *delegateKeyMap
+}
+
+type listKeyMap struct {
+	input key.Binding
+}
+
+func newListKeyMap() *listKeyMap {
+	return &listKeyMap{
+		input: key.NewBinding(
+			key.WithKeys("i"),
+			key.WithHelp("i", "input"),
+		),
+	}
+}
+
+func newModel() model {
+	var (
+		delegateKeys = newDelegateKeyMap()
+		listKeys     = newListKeyMap()
+	)
+
+	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
+	items, _ := getHostsFromSshConfig(sshConfigPath)
+
+	delegate := newItemDelegate(delegateKeys)
+	hostList := list.New(items, delegate, 0, 0)
+	hostList.Title = "Wishlist Lite"
+	hostList.Styles.Title = titleStyle
+	hostList.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			listKeys.input,
+		}
+	}
+
+	return model{
+		list:         hostList,
+		keys:         listKeys,
+		delegateKeys: delegateKeys,
+	}
 }
 
 func (m model) Init() tea.Cmd {
@@ -51,6 +103,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.choice = string(i.host)
 			}
 			return m, tea.Quit
+		}
+		switch {
+		case key.Matches(msg, m.keys.input):
+			return m, nil
 		}
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
@@ -119,13 +175,7 @@ func runExecutable(execPath string, args []string) {
 
 func main() {
 	execPath := verifyExecutable(sshExecutable)
-	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
-	items, _ := getHostsFromSshConfig(sshConfigPath)
-
-	md := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
-	md.list.Title = "Wishlist Lite"
-
-	p := tea.NewProgram(md, tea.WithAltScreen())
+	p := tea.NewProgram(newModel(), tea.WithAltScreen())
 
 	m, err := p.StartReturningModel()
 	if err != nil {
