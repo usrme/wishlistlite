@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"syscall"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -110,6 +111,24 @@ func verifyExecutable(execName string) string {
 	return path
 }
 
+func userHomeDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+
+	case "linux":
+		home := os.Getenv("XDG_CONFIG_HOME")
+		if home != "" {
+			return home
+		}
+	}
+	return os.Getenv("HOME")
+}
+
 func runExecutable(execPath string, args []string) {
 	env := os.Environ()
 	err := syscall.Exec(execPath, args, env)
@@ -120,7 +139,8 @@ func runExecutable(execPath string, args []string) {
 
 func main() {
 	execPath := verifyExecutable(sshExecutable)
-	content, err := ioutil.ReadFile("/home/usrme/.ssh/config")
+	sshConfig := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
+	content, err := ioutil.ReadFile(sshConfig)
 	if err != nil {
 		fmt.Println("Err")
 	}
