@@ -59,6 +59,41 @@ func newListKeyMap() *listKeyMap {
 	}
 }
 
+func userHomeDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+
+	case "linux":
+		home := os.Getenv("XDG_CONFIG_HOME")
+		if home != "" {
+			return home
+		}
+	}
+	return os.Getenv("HOME")
+}
+
+func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		fmt.Println("Err")
+	}
+
+	pat := regexp.MustCompile("Host\\s([^\\*].*)[\\r\\n]\\s+HostName\\s(.*)")
+	matches := pat.FindAllStringSubmatch(string(content), -1)
+	var items []list.Item
+	for _, match := range matches {
+		host := item{host: match[1], hostname: match[2]}
+		items = append(items, host)
+	}
+
+	return items, nil
+}
+
 func newModel() model {
 	var (
 		delegateKeys = newDelegateKeyMap()
@@ -132,41 +167,6 @@ func verifyExecutable(execName string) string {
 		panic(err)
 	}
 	return path
-}
-
-func userHomeDir() string {
-	switch runtime.GOOS {
-	case "windows":
-		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
-		if home == "" {
-			home = os.Getenv("USERPROFILE")
-		}
-		return home
-
-	case "linux":
-		home := os.Getenv("XDG_CONFIG_HOME")
-		if home != "" {
-			return home
-		}
-	}
-	return os.Getenv("HOME")
-}
-
-func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
-	content, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		fmt.Println("Err")
-	}
-
-	pat := regexp.MustCompile("Host\\s([^\\*].*)[\\r\\n]\\s+HostName\\s(.*)")
-	matches := pat.FindAllStringSubmatch(string(content), -1)
-	var items []list.Item
-	for _, match := range matches {
-		host := item{host: match[1], hostname: match[2]}
-		items = append(items, host)
-	}
-
-	return items, nil
 }
 
 func runExecutable(execPath string, args []string) {
