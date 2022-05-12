@@ -20,6 +20,13 @@ cd wishlist-lite
 go build
 ```
 
+## Removal
+
+```bash
+rm -f "${GOPATH}/bin/wishlist-lite"
+rm -rf "${GOPATH}/pkg/mod/github.com/usrme/wishlist-lite*"
+```
+
 ## Usage
 
 At the moment there is only one way to use it and that is to just execute `wishlist-lite`. This opens up an alternate screen where you can (hopefully) see all of your hosts from your `~/.ssh/config` listed. Hosts starting with an asterisk are excluded as those (in my use case) usually mean either a `ProxyJump` or a `User` declaration right after.
