@@ -86,6 +86,7 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
+// TODO: Write tests for this
 func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -104,9 +105,7 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 }
 
 func New() model {
-	var (
-		listKeys = newListKeyMap()
-	)
+	var listKeys = newListKeyMap()
 
 	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	items, _ := getHostsFromSshConfig(sshConfigPath)
