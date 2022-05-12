@@ -101,7 +101,13 @@ func newModel() model {
 	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	items, _ := getHostsFromSshConfig(sshConfigPath)
 
-	delegate := newItemDelegate()
+	delegate := list.NewDefaultDelegate()
+
+	tColor := lipgloss.Color("#a3be8c")
+	dColor := lipgloss.Color("#7a8e69")
+	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.Foreground(tColor).BorderLeftForeground(tColor)
+	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.Foreground(dColor).BorderLeftForeground(tColor)
+
 	hostList := list.New(items, delegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
