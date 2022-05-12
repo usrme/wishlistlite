@@ -27,9 +27,9 @@ var (
 				Foreground(offWhiteColor).
 				Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
 				Padding(0, 1)
-	selectedItemColor = lipgloss.Color("#a3be8c")                        // Nord Aurora green
-	selectedDescColor = lipgloss.Color("#7a8e69")                        // Dimmed Nord Aurora green
-	filterPromptStyle = lipgloss.NewStyle().Foreground(nordAuroraYellow) // Nord Aurora yellow
+	selectedItemColor = lipgloss.Color("#a3be8c") // Nord Aurora green
+	selectedDescColor = lipgloss.Color("#7a8e69") // Dimmed Nord Aurora green
+	filterPromptStyle = lipgloss.NewStyle().Foreground(nordAuroraYellow)
 	filterCursorStyle = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow)
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
