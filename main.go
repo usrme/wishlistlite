@@ -19,15 +19,15 @@ import (
 const sshExecutable = "ssh"
 
 var (
-	docStyle         = lipgloss.NewStyle().Margin(1, 2)
-	nordAuroraYellow = lipgloss.Color("#ebcb8b")
-	nordAuroraOrange = lipgloss.Color("#d08770")
-	titleStyle       = lipgloss.NewStyle().
+	docStyle           = lipgloss.NewStyle().Margin(1, 2)
+	nordAuroraYellow   = lipgloss.Color("#ebcb8b")
+	nordAuroraOrange   = lipgloss.Color("#d08770")
+	nordAuroraGreen    = lipgloss.Color("#a3be8c")
+	dimNordAuroraGreen = lipgloss.Color("#7a8e69")
+	titleStyle         = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#fffdf5ff")).
 				Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
 				Padding(0, 1)
-	selectedItemColor = lipgloss.Color("#a3be8c") // Nord Aurora green
-	selectedDescColor = lipgloss.Color("#7a8e69") // Dimmed Nord Aurora green
 	filterPromptStyle = lipgloss.NewStyle().Foreground(nordAuroraYellow)
 	filterCursorStyle = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow)
@@ -112,11 +112,11 @@ func New() model {
 
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
-		Foreground(selectedItemColor).
-		BorderLeftForeground(selectedItemColor)
+		Foreground(nordAuroraGreen).
+		BorderLeftForeground(nordAuroraGreen)
 	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.
-		Foreground(selectedDescColor).
-		BorderLeftForeground(selectedItemColor)
+		Foreground(dimNordAuroraGreen).
+		BorderLeftForeground(nordAuroraGreen)
 	delegate.ShortHelpFunc = func() []key.Binding {
 		return []key.Binding{listKeys.input}
 	}
