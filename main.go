@@ -20,11 +20,10 @@ const sshExecutable = "ssh"
 
 var (
 	docStyle         = lipgloss.NewStyle().Margin(1, 2)
-	offWhiteColor    = lipgloss.Color("#fffdf5ff")
 	nordAuroraYellow = lipgloss.Color("#ebcb8b")
 	nordAuroraOrange = lipgloss.Color("#d08770")
 	titleStyle       = lipgloss.NewStyle().
-				Foreground(offWhiteColor).
+				Foreground(lipgloss.Color("#fffdf5ff")).
 				Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
 				Padding(0, 1)
 	selectedItemColor = lipgloss.Color("#a3be8c") // Nord Aurora green
