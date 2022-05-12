@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -18,15 +19,20 @@ import (
 const sshExecutable = "ssh"
 
 var (
-	docStyle   = lipgloss.NewStyle().Margin(1, 2)
-	titleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#fffdf5ff")).
-			Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
-			Padding(0, 1)
-	selectedItemColor = lipgloss.Color("#a3be8c")                                 // Nord Aurora green
-	selectedDescColor = lipgloss.Color("#7a8e69")                                 // Dimmed Nord Aurora green
-	filterPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ebcb8b")) // Nord Aurora yellow
-	filterCursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d08770")) // Nord Aurora orange
+	docStyle         = lipgloss.NewStyle().Margin(1, 2)
+	offWhiteColor    = lipgloss.Color("#fffdf5ff")
+	nordAuroraYellow = lipgloss.Color("#ebcb8b")
+	nordAuroraOrange = lipgloss.Color("#d08770")
+	titleStyle       = lipgloss.NewStyle().
+				Foreground(offWhiteColor).
+				Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
+				Padding(0, 1)
+	selectedItemColor = lipgloss.Color("#a3be8c")                        // Nord Aurora green
+	selectedDescColor = lipgloss.Color("#7a8e69")                        // Dimmed Nord Aurora green
+	filterPromptStyle = lipgloss.NewStyle().Foreground(nordAuroraYellow) // Nord Aurora yellow
+	filterCursorStyle = lipgloss.NewStyle().Foreground(nordAuroraOrange)
+	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow)
+	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
@@ -42,11 +48,12 @@ func (i item) Description() string { return i.hostname }
 func (i item) FilterValue() string { return i.host }
 
 type model struct {
-	list     list.Model
-	items    []item
-	choice   string
-	quitting bool
-	keys     *listKeyMap
+	list         list.Model
+	items        []item
+	choice       string
+	quitting     bool
+	keys         *listKeyMap
+	connectInput textinput.Model
 }
 
 type listKeyMap struct {
@@ -57,7 +64,7 @@ func newListKeyMap() *listKeyMap {
 	return &listKeyMap{
 		input: key.NewBinding(
 			key.WithKeys("i"),
-			key.WithHelp("i", "input"),
+			key.WithHelp("i", "input connection"),
 		),
 	}
 }
@@ -112,6 +119,9 @@ func New() model {
 	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.
 		Foreground(selectedDescColor).
 		BorderLeftForeground(selectedItemColor)
+	delegate.ShortHelpFunc = func() []key.Binding {
+		return []key.Binding{listKeys.input}
+	}
 
 	hostList := list.New(items, delegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
@@ -123,10 +133,14 @@ func New() model {
 			listKeys.input,
 		}
 	}
-
+	input := textinput.New()
+	input.Prompt = "Connect to: "
+	input.PromptStyle = inputPromptStyle
+	input.CursorStyle = inputCursorStyle
 	return model{
-		list: hostList,
-		keys: listKeys,
+		list:         hostList,
+		keys:         listKeys,
+		connectInput: input,
 	}
 }
 
@@ -135,6 +149,28 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
+	}
+
+	if m.connectInput.Focused() {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch keypress := msg.String(); keypress {
+			case "esc":
+				return m, tea.Quit
+			case "enter":
+				m.choice = m.connectInput.Value()
+				return m, tea.Quit
+			}
+		}
+		var cmd tea.Cmd
+		m.connectInput, cmd = m.connectInput.Update(msg)
+		return m, cmd
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
@@ -149,18 +185,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Quit
 		}
-		// Don't match any of the keys below if we're actively filtering.
+		// Don't match any of the keys below if we're actively filtering
 		if m.list.FilterState() == list.Filtering {
 			break
 		}
 		switch {
 		case key.Matches(msg, m.keys.input):
-			statusCmd := m.list.NewStatusMessage(statusMessageStyle("Pressed"))
-			return m, statusCmd
+			m.connectInput.Focus()
+			return m, textinput.Blink
 		}
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 
 	var cmd tea.Cmd
@@ -169,6 +202,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	if m.connectInput.Focused() {
+		// TODO: Find way to co-opt 'FilterInput' when 'ConnectInput' is focused
+		return docStyle.Render(m.connectInput.View())
+	}
 	return docStyle.Render(m.list.View())
 }
 
