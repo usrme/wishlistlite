@@ -29,7 +29,13 @@ rm -rf "${GOPATH}/pkg/mod/github.com/usrme/wishlist-lite*"
 
 ## Usage
 
-At the moment there is only one way to use it and that is to just execute `wishlist-lite`. This opens up an alternate screen where you can (hopefully) see all of your hosts from your `~/.ssh/config` listed. Hosts starting with an asterisk are excluded as those (in my use case) usually mean either a `ProxyJump` or a `User` declaration right after.
+At the moment there is only one way to use it and that is to just execute `wishlist-lite`. This opens up an alternate screen where you can (hopefully) see all of your hosts from your `~/.ssh/config` listed, which can then be SSH-ed into by selecting the appropriate one, or filtering for it, and pressing Enter. It then just grabs whatever is next to the `Host` declaration, precedes it with `ssh`, runs that executable, and exits `wishlist-lite` leaving you with an SSH session.
+
+It's also possible to press the letter `i`, which will allow you to supply a host to connect to on an ad-hoc basis. For example inputting `user@example.com` and pressing Enter will go through the exact process as above. Any of the entries from your SSH configuration are still valid as inputs.
+
+### Caveats
+
+Hosts starting with an asterisk are excluded as those (in my use case) usually mean either a `ProxyJump` or a `User` declaration right after.
 
 Before starting the execution there is a verification that is made that the `ssh` executable exists, but there are still some other assumptions that are made:
 
