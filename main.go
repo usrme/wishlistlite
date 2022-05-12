@@ -121,6 +121,7 @@ func New() model {
 		return []key.Binding{listKeys.input}
 	}
 
+	// TODO: Add version/hash to status bar
 	hostList := list.New(items, delegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
