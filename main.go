@@ -21,7 +21,7 @@ var (
 	docStyle   = lipgloss.NewStyle().Margin(1, 2)
 	titleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#fffdf5ff")).
-			Background(lipgloss.Color("#5e81ac")).
+			Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
 			Padding(0, 1)
 	filterPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ebcb8b")) // Nord Aurora yellow
 	filterCursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d08770")) // Nord Aurora orange
