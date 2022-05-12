@@ -23,6 +23,8 @@ var (
 			Foreground(lipgloss.Color("#fffdf5ff")).
 			Background(lipgloss.Color("#5e81ac")).
 			Padding(0, 1)
+	filterPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ebcb8b")) // Nord Aurora yellow
+	filterCursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d08770")) // Nord Aurora orange
 
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
@@ -111,7 +113,8 @@ func newModel() model {
 	hostList := list.New(items, delegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
-	// TODO: Figure out why styling 'hostList.Styles.FilterPrompt' doesn't work like 'hostList.Styles.Title'
+	hostList.FilterInput.PromptStyle = filterPromptStyle
+	hostList.FilterInput.CursorStyle = filterCursorStyle
 	hostList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.input,
