@@ -97,7 +97,7 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 	return items, nil
 }
 
-func newModel() model {
+func New() model {
 	var (
 		listKeys = newListKeyMap()
 	)
@@ -190,7 +190,7 @@ func runExecutable(execPath string, args []string) {
 
 func main() {
 	execPath := verifyExecutable(sshExecutable)
-	p := tea.NewProgram(newModel(), tea.WithAltScreen())
+	p := tea.NewProgram(New(), tea.WithAltScreen())
 
 	m, err := p.StartReturningModel()
 	if err != nil {
