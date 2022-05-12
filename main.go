@@ -23,6 +23,8 @@ var (
 			Foreground(lipgloss.Color("#fffdf5ff")).
 			Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
 			Padding(0, 1)
+	selectedItemColor = lipgloss.Color("#a3be8c")                                 // Nord Aurora green
+	selectedDescColor = lipgloss.Color("#7a8e69")                                 // Dimmed Nord Aurora green
 	filterPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ebcb8b")) // Nord Aurora yellow
 	filterCursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d08770")) // Nord Aurora orange
 
@@ -104,11 +106,12 @@ func newModel() model {
 	items, _ := getHostsFromSshConfig(sshConfigPath)
 
 	delegate := list.NewDefaultDelegate()
-
-	tColor := lipgloss.Color("#a3be8c")
-	dColor := lipgloss.Color("#7a8e69")
-	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.Foreground(tColor).BorderLeftForeground(tColor)
-	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.Foreground(dColor).BorderLeftForeground(tColor)
+	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
+		Foreground(selectedItemColor).
+		BorderLeftForeground(selectedItemColor)
+	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.
+		Foreground(selectedDescColor).
+		BorderLeftForeground(selectedItemColor)
 
 	hostList := list.New(items, delegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
