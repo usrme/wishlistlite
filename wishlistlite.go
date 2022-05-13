@@ -32,10 +32,6 @@ var (
 	filterCursorStyle = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow)
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
-
-	statusMessageStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
-				Render
 )
 
 type item struct {
