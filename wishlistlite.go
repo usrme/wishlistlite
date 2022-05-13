@@ -191,7 +191,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keys.input):
 			m.connectInput.Focus()
-			return m, textinput.Blink
 		}
 	}
 
