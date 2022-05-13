@@ -46,26 +46,23 @@ func (i item) Title() string       { return i.host }
 func (i item) Description() string { return i.hostname }
 func (i item) FilterValue() string { return i.host }
 
+type KeyMap struct {
+	Input key.Binding
+}
+
+var DefaultKeyMap = KeyMap{
+	Input: key.NewBinding(
+		key.WithKeys("i"),
+		key.WithHelp("i", "input connection"),
+	),
+}
+
 type model struct {
 	list         list.Model
 	items        []item
 	choice       string
 	quitting     bool
-	keys         *listKeyMap
 	connectInput textinput.Model
-}
-
-type listKeyMap struct {
-	input key.Binding
-}
-
-func newListKeyMap() *listKeyMap {
-	return &listKeyMap{
-		input: key.NewBinding(
-			key.WithKeys("i"),
-			key.WithHelp("i", "input connection"),
-		),
-	}
 }
 
 func userHomeDir() string {
@@ -105,8 +102,6 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 }
 
 func New() model {
-	var listKeys = newListKeyMap()
-
 	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	items, _ := getHostsFromSshConfig(sshConfigPath)
 
@@ -118,7 +113,7 @@ func New() model {
 		Foreground(dimNordAuroraGreen).
 		BorderLeftForeground(nordAuroraGreen)
 	delegate.ShortHelpFunc = func() []key.Binding {
-		return []key.Binding{listKeys.input}
+		return []key.Binding{DefaultKeyMap.Input}
 	}
 
 	// TODO: Add version/hash to status bar
@@ -129,7 +124,7 @@ func New() model {
 	hostList.FilterInput.CursorStyle = filterCursorStyle
 	hostList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
-			listKeys.input,
+			DefaultKeyMap.Input,
 		}
 	}
 	input := textinput.New()
@@ -138,7 +133,6 @@ func New() model {
 	input.CursorStyle = inputCursorStyle
 	return model{
 		list:         hostList,
-		keys:         listKeys,
 		connectInput: input,
 	}
 }
@@ -189,7 +183,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 		switch {
-		case key.Matches(msg, m.keys.input):
+		case key.Matches(msg, DefaultKeyMap.Input):
 			m.connectInput.Focus()
 		}
 	}
