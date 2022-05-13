@@ -9,27 +9,27 @@ I made this a little while after discovering the canonical [Wishlist](https://gi
 - using `go install`:
 
 ```bash
-go install github.com/usrme/wishlist-lite@latest
+go install github.com/usrme/wishlistlite@latest
 ```
 
 - build it yourself (requires Go 1.18+):
 
 ```bash
-git clone https://github.com/usrme/wishlist-lite.git
-cd wishlist-lite
+git clone https://github.com/usrme/wishlistlite.git
+cd wishlistlite
 go build
 ```
 
 ## Removal
 
 ```bash
-rm -f "${GOPATH}/bin/wishlist-lite"
-rm -rf "${GOPATH}/pkg/mod/github.com/usrme/wishlist-lite*"
+rm -f "${GOPATH}/bin/wishlistlite"
+rm -rf "${GOPATH}/pkg/mod/github.com/usrme/wishlistlite*"
 ```
 
 ## Usage
 
-At the moment there is only one way to use it and that is to just execute `wishlist-lite`. This opens up an alternate screen where you can (hopefully) see all of your hosts from your `~/.ssh/config` listed, which can then be SSH-ed into by selecting the appropriate one, or filtering for it, and pressing Enter. It then just grabs whatever is next to the `Host` declaration, precedes it with `ssh`, runs that executable, and exits `wishlist-lite` leaving you with an SSH session.
+At the moment there is only one way to use it and that is to just execute `wishlistlite`. This opens up an alternate screen where you can (hopefully) see all of your hosts from your `~/.ssh/config` listed, which can then be SSH-ed into by selecting the appropriate one, or filtering for it, and pressing Enter. It then just grabs whatever is next to the `Host` declaration, precedes it with `ssh`, runs that executable, and exits `wishlistlite` leaving you with an SSH session.
 
 It's also possible to press the letter `i`, which will allow you to supply a host to connect to on an ad-hoc basis. For example inputting `user@example.com` and pressing Enter will go through the exact process as above. Any of the entries from your SSH configuration are still valid as inputs.
 

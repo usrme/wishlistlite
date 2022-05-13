@@ -1,4 +1,4 @@
-module github.com/usrme/wishlist-lite
+module github.com/usrme/wishlistlite
 
 go 1.18
 
