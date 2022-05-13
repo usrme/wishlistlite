@@ -30,7 +30,7 @@ var (
 				Padding(0, 1)
 	filterPromptStyle = lipgloss.NewStyle().Foreground(nordAuroraYellow)
 	filterCursorStyle = lipgloss.NewStyle().Foreground(nordAuroraOrange)
-	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow)
+	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow).Padding(0, 0, 0, 2)
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 )
 
@@ -190,11 +190,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	var view string
+
 	if m.connectInput.Focused() {
-		// TODO: Find way to co-opt 'FilterInput' when 'ConnectInput' is focused
-		return docStyle.Render(m.connectInput.View())
+		m.list.SetShowTitle(false)
+		view += m.connectInput.View()
 	}
-	return docStyle.Render(m.list.View())
+	view += m.list.View()
+
+	return docStyle.Render(view)
 }
 
 func verifyExecutable(execName string) string {
