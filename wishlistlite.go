@@ -42,11 +42,11 @@ func (i item) Title() string       { return i.host }
 func (i item) Description() string { return i.hostname }
 func (i item) FilterValue() string { return i.host }
 
-type KeyMap struct {
+type keyMap struct {
 	Input key.Binding
 }
 
-var DefaultKeyMap = KeyMap{
+var defaultKeyMap = keyMap{
 	Input: key.NewBinding(
 		key.WithKeys("i"),
 		key.WithHelp("i", "input connection"),
@@ -111,7 +111,7 @@ func New() model {
 		Foreground(dimNordAuroraGreen).
 		BorderLeftForeground(nordAuroraGreen)
 	delegate.ShortHelpFunc = func() []key.Binding {
-		return []key.Binding{DefaultKeyMap.Input}
+		return []key.Binding{defaultKeyMap.Input}
 	}
 
 	// TODO: Add version/hash to status bar
@@ -122,7 +122,7 @@ func New() model {
 	hostList.FilterInput.CursorStyle = filterCursorStyle
 	hostList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
-			DefaultKeyMap.Input,
+			defaultKeyMap.Input,
 		}
 	}
 	input := textinput.New()
@@ -181,7 +181,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 		switch {
-		case key.Matches(msg, DefaultKeyMap.Input):
+		case key.Matches(msg, defaultKeyMap.Input):
 			m.connectInput.Focus()
 		}
 	}
