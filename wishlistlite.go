@@ -43,13 +43,18 @@ func (i item) Description() string { return i.hostname }
 func (i item) FilterValue() string { return i.host }
 
 type keyMap struct {
-	Input key.Binding
+	Input   key.Binding
+	Connect key.Binding
 }
 
 var defaultKeyMap = keyMap{
 	Input: key.NewBinding(
 		key.WithKeys("i"),
 		key.WithHelp("i", "input connection"),
+	),
+	Connect: key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("Enter", "connect"),
 	),
 }
 
@@ -111,7 +116,7 @@ func New() model {
 		Foreground(dimNordAuroraGreen).
 		BorderLeftForeground(nordAuroraGreen)
 	delegate.ShortHelpFunc = func() []key.Binding {
-		return []key.Binding{defaultKeyMap.Input}
+		return []key.Binding{defaultKeyMap.Input, defaultKeyMap.Connect}
 	}
 
 	// TODO: Add version/hash to status bar
@@ -123,6 +128,7 @@ func New() model {
 	hostList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			defaultKeyMap.Input,
+			defaultKeyMap.Connect,
 		}
 	}
 	input := textinput.New()
@@ -168,13 +174,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			m.quitting = true
 			return m, tea.Quit
-
-		case "enter":
-			i, ok := m.list.SelectedItem().(item)
-			if ok {
-				m.choice = string(i.host)
-			}
-			return m, tea.Quit
 		}
 		// Don't match any of the keys below if we're actively filtering
 		if m.list.FilterState() == list.Filtering {
@@ -183,6 +182,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, defaultKeyMap.Input):
 			m.connectInput.Focus()
+
+		case key.Matches(msg, defaultKeyMap.Connect):
+			i, ok := m.list.SelectedItem().(item)
+			if ok {
+				m.choice = string(i.host)
+			}
+			return m, tea.Quit
 		}
 	}
 
