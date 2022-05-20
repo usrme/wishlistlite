@@ -72,40 +72,19 @@ type model struct {
 	connectInput textinput.Model
 }
 
-func userHomeDir() string {
-	switch runtime.GOOS {
-	case "windows":
-		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
-		if home == "" {
-			home = os.Getenv("USERPROFILE")
-		}
-		return home
+func main() {
+	execPath := verifyExecutable(sshExecutable)
+	p := tea.NewProgram(New(), tea.WithAltScreen())
 
-	case "linux":
-		home := os.Getenv("XDG_CONFIG_HOME")
-		if home != "" {
-			return home
-		}
-	}
-	return os.Getenv("HOME")
-}
-
-// TODO: Write tests for this
-func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
-	content, err := ioutil.ReadFile(filePath)
+	m, err := p.StartReturningModel()
 	if err != nil {
-		fmt.Println("Err")
+		fmt.Println("Oh no:", err)
+		os.Exit(1)
 	}
 
-	pat := regexp.MustCompile("Host\\s([^\\*].*)[\\r\\n]\\s+HostName\\s(.*)")
-	matches := pat.FindAllStringSubmatch(string(content), -1)
-	var items []list.Item
-	for _, match := range matches {
-		host := item{host: match[1], hostname: match[2]}
-		items = append(items, host)
+	if m, ok := m.(model); ok && m.choice != "" {
+		runExecutable(execPath, []string{sshExecutable, m.choice})
 	}
-
-	return items, nil
 }
 
 func New() model {
@@ -203,15 +182,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func getPkgVersion() string {
-	version := "unknown"
-	if info, ok := debug.ReadBuildInfo(); ok {
-		version = info.Main.Version
-	}
-
-	return version
-}
-
 func (m model) View() string {
 	var view string
 
@@ -258,17 +228,47 @@ func runExecutable(execPath string, args []string) {
 	}
 }
 
-func main() {
-	execPath := verifyExecutable(sshExecutable)
-	p := tea.NewProgram(New(), tea.WithAltScreen())
+func userHomeDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
 
-	m, err := p.StartReturningModel()
+	case "linux":
+		home := os.Getenv("XDG_CONFIG_HOME")
+		if home != "" {
+			return home
+		}
+	}
+	return os.Getenv("HOME")
+}
+
+// TODO: Write tests for this
+func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
+	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println("Oh no:", err)
-		os.Exit(1)
+		fmt.Println("Err")
 	}
 
-	if m, ok := m.(model); ok && m.choice != "" {
-		runExecutable(execPath, []string{sshExecutable, m.choice})
+	pat := regexp.MustCompile("Host\\s([^\\*].*)[\\r\\n]\\s+HostName\\s(.*)")
+	matches := pat.FindAllStringSubmatch(string(content), -1)
+	var items []list.Item
+	for _, match := range matches {
+		host := item{host: match[1], hostname: match[2]}
+		items = append(items, host)
 	}
+
+	return items, nil
+}
+
+func getPkgVersion() string {
+	version := "unknown"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		version = info.Main.Version
+	}
+
+	return version
 }
