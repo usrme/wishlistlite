@@ -121,11 +121,7 @@ func New() model {
 	}
 
 	hostList := list.New(items, delegate, 0, 0)
-	version := "unknown"
-	if info, ok := debug.ReadBuildInfo(); ok {
-		version = info.Main.Version
-	}
-	hostList.Title = fmt.Sprintf("Wishlist Lite, %s", version)
+	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
 	hostList.FilterInput.PromptStyle = filterPromptStyle
 	hostList.FilterInput.CursorStyle = filterCursorStyle
@@ -187,6 +183,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, defaultKeyMap.Input):
 			m.connectInput.Focus()
 
+		// TODO: Add ability to return back to previous screen
 		case key.Matches(msg, defaultKeyMap.Connect):
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
@@ -201,9 +198,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func getPkgVersion() string {
+	version := "unknown"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		version = info.Main.Version
+	}
+
+	return version
+}
+
 func (m model) View() string {
 	var view string
 
+	m.list.NewStatusMessage(getPkgVersion())
 	if m.connectInput.Focused() {
 		m.list.SetShowTitle(false)
 		view += m.connectInput.View()
