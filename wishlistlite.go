@@ -157,7 +157,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyMsg:
 			switch keypress := msg.String(); keypress {
 			case "esc":
-				return m, tea.Quit
+				m.connectInput.Blur()
 			case "enter":
 				m.choice = m.connectInput.Value()
 				return m, tea.Quit
