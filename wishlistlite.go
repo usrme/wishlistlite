@@ -46,6 +46,7 @@ func (i item) FilterValue() string { return i.host }
 type keyMap struct {
 	Input   key.Binding
 	Connect key.Binding
+	Cancel  key.Binding
 }
 
 var defaultKeyMap = keyMap{
@@ -55,7 +56,11 @@ var defaultKeyMap = keyMap{
 	),
 	Connect: key.NewBinding(
 		key.WithKeys("enter"),
-		key.WithHelp("Enter", "connect"),
+		key.WithHelp("enter", "connect"),
+	),
+	Cancel: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "cancel input"),
 	),
 }
 
@@ -117,7 +122,7 @@ func New() model {
 		Foreground(dimNordAuroraGreen).
 		BorderLeftForeground(nordAuroraGreen)
 	delegate.ShortHelpFunc = func() []key.Binding {
-		return []key.Binding{defaultKeyMap.Input, defaultKeyMap.Connect}
+		return []key.Binding{defaultKeyMap.Input, defaultKeyMap.Connect, defaultKeyMap.Cancel}
 	}
 
 	hostList := list.New(items, delegate, 0, 0)
@@ -129,6 +134,7 @@ func New() model {
 		return []key.Binding{
 			defaultKeyMap.Input,
 			defaultKeyMap.Connect,
+			defaultKeyMap.Cancel,
 		}
 	}
 	input := textinput.New()
@@ -183,7 +189,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, defaultKeyMap.Input):
 			m.connectInput.Focus()
 
-		// TODO: Add ability to return back to previous screen
 		case key.Matches(msg, defaultKeyMap.Connect):
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
@@ -211,9 +216,26 @@ func (m model) View() string {
 	var view string
 
 	m.list.NewStatusMessage(getPkgVersion())
+
 	if m.connectInput.Focused() {
+		defaultKeyMap.Cancel.SetEnabled(true)
+		defaultKeyMap.Input.SetEnabled(false)
+		m.list.KeyMap.CursorUp.SetEnabled(false)
+		m.list.KeyMap.CursorDown.SetEnabled(false)
+		m.list.KeyMap.Filter.SetEnabled(false)
+		m.list.KeyMap.Quit.SetEnabled(false)
+		m.list.KeyMap.ShowFullHelp.SetEnabled(false)
+
 		m.list.SetShowTitle(false)
 		view += m.connectInput.View()
+	} else {
+		defaultKeyMap.Cancel.SetEnabled(false)
+		defaultKeyMap.Input.SetEnabled(true)
+		m.list.KeyMap.CursorUp.SetEnabled(true)
+		m.list.KeyMap.CursorDown.SetEnabled(true)
+		m.list.KeyMap.Filter.SetEnabled(true)
+		m.list.KeyMap.Quit.SetEnabled(true)
+		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
 	}
 	view += m.list.View()
 
