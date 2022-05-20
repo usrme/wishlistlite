@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"runtime/debug"
 	"syscall"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -119,9 +120,12 @@ func New() model {
 		return []key.Binding{defaultKeyMap.Input, defaultKeyMap.Connect}
 	}
 
-	// TODO: Add version/hash to status bar
 	hostList := list.New(items, delegate, 0, 0)
-	hostList.Title = "Wishlist Lite"
+	version := "unknown"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		version = info.Main.Version
+	}
+	hostList.Title = fmt.Sprintf("Wishlist Lite, %s", version)
 	hostList.Styles.Title = titleStyle
 	hostList.FilterInput.PromptStyle = filterPromptStyle
 	hostList.FilterInput.CursorStyle = filterCursorStyle
