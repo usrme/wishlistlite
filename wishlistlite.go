@@ -33,6 +33,7 @@ var (
 	filterCursorStyle = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow).Padding(0, 0, 0, 2)
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
+	versionStyle      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).Render
 )
 
 type item struct {
@@ -185,7 +186,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var view string
 
-	m.list.NewStatusMessage(getPkgVersion())
+	m.list.NewStatusMessage(versionStyle(getPkgVersion()))
 
 	if m.connectInput.Focused() {
 		defaultKeyMap.Cancel.SetEnabled(true)
