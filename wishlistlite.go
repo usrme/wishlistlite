@@ -67,7 +67,6 @@ var defaultKeyMap = keyMap{
 
 type model struct {
 	list         list.Model
-	items        []item
 	choice       string
 	quitting     bool
 	connectInput textinput.Model
