@@ -258,7 +258,7 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 		fmt.Println("Err")
 	}
 
-	pat := regexp.MustCompile("Host\\s([^\\*].*)[\\r\\n]\\s+HostName\\s(.*)")
+	pat := regexp.MustCompile(`Host\s([^\*].*)[\r\n]\s+HostName\s(.*)`)
 	matches := pat.FindAllStringSubmatch(string(content), -1)
 	var items []list.Item
 	for _, match := range matches {
