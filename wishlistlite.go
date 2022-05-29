@@ -91,8 +91,6 @@ func New() model {
 	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	items, _ := getHostsFromSshConfig(sshConfigPath)
 
-	// TODO: Possibly create a custom delegate to be able to dim when
-	// inputting custom SSH connection
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
 		Foreground(nordAuroraGreen).
