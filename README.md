@@ -1,5 +1,7 @@
 # Wishlist Lite
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/usrme/wishlistlite)](https://goreportcard.com/report/github.com/usrme/wishlistlite)
+
 The lesser SSH directory ✨
 
 I made this a little while after discovering the canonical [Wishlist](https://github.com/charmbracelet/wishlist), but after not getting it to work properly (it wasn't able to connect to any of my defined hosts) I still felt the need for a tool of this sort. This luckily coincided with the time I started learning about Go and after a bit of faffing about I got something to work!
