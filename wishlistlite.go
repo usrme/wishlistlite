@@ -48,6 +48,7 @@ type keyMap struct {
 	Input   key.Binding
 	Connect key.Binding
 	Cancel  key.Binding
+	Sort    key.Binding
 }
 
 var defaultKeyMap = keyMap{
@@ -62,6 +63,10 @@ var defaultKeyMap = keyMap{
 	Cancel: key.NewBinding(
 		key.WithKeys("esc"),
 		key.WithHelp("esc", "cancel input"),
+	),
+	Sort: key.NewBinding(
+		key.WithKeys("r"),
+		key.WithHelp("r", "recently used"),
 	),
 }
 
@@ -99,7 +104,7 @@ func New() model {
 		Foreground(dimNordAuroraGreen).
 		BorderLeftForeground(nordAuroraGreen)
 	delegate.ShortHelpFunc = func() []key.Binding {
-		return []key.Binding{defaultKeyMap.Input, defaultKeyMap.Connect, defaultKeyMap.Cancel}
+		return []key.Binding{defaultKeyMap.Input, defaultKeyMap.Connect, defaultKeyMap.Cancel, defaultKeyMap.Sort}
 	}
 
 	hostList := list.New(items, delegate, 0, 0)
@@ -112,6 +117,7 @@ func New() model {
 			defaultKeyMap.Input,
 			defaultKeyMap.Connect,
 			defaultKeyMap.Cancel,
+			defaultKeyMap.Sort,
 		}
 	}
 	input := textinput.New()
@@ -195,6 +201,7 @@ func (m model) View() string {
 	if m.connectInput.Focused() {
 		defaultKeyMap.Cancel.SetEnabled(true)
 		defaultKeyMap.Input.SetEnabled(false)
+		defaultKeyMap.Sort.SetEnabled(false)
 		m.list.KeyMap.CursorUp.SetEnabled(false)
 		m.list.KeyMap.CursorDown.SetEnabled(false)
 		m.list.KeyMap.Filter.SetEnabled(false)
@@ -206,6 +213,7 @@ func (m model) View() string {
 	} else {
 		defaultKeyMap.Cancel.SetEnabled(false)
 		defaultKeyMap.Input.SetEnabled(true)
+		defaultKeyMap.Sort.SetEnabled(true)
 		m.list.KeyMap.CursorUp.SetEnabled(true)
 		m.list.KeyMap.CursorDown.SetEnabled(true)
 		m.list.KeyMap.Filter.SetEnabled(true)
