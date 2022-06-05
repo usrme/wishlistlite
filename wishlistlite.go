@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -269,12 +271,29 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 	pat := regexp.MustCompile(`Host\s([^\*].*)[\r\n]\s+HostName\s(.*)`)
 	matches := pat.FindAllStringSubmatch(string(content), -1)
 	var items []list.Item
+	var hostSliceMap []map[string]interface{}
+
 	for _, match := range matches {
 		host := Item{Host: match[1], Hostname: match[2]}
+		hostMap := map[string]interface{}{"Host": host.Host, "Hostname": host.Hostname}
+		hostSliceMap = append(hostSliceMap, hostMap)
 		items = append(items, host)
 	}
 
+	writeHostsAsRecent(hostSliceMap)
 	return items, nil
+}
+
+func writeHostsAsRecent(h []map[string]interface{}) {
+	recentlyUsedPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
+
+	if _, err := os.Stat(recentlyUsedPath); errors.Is(err, os.ErrNotExist) {
+		result, err := json.Marshal(h)
+		if err != nil {
+			fmt.Printf("Error occurred while marshalling JSON")
+		}
+		ioutil.WriteFile(recentlyUsedPath, result, 0644)
+	}
 }
 
 func getPkgVersion() string {
