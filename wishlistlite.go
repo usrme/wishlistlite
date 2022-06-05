@@ -39,8 +39,11 @@ var (
 )
 
 type Item struct {
-	Host, Hostname string
+	Host     string
+	Hostname string
 }
+
+type HostMap map[string]interface{}
 
 func (i Item) Title() string       { return i.Host }
 func (i Item) Description() string { return i.Hostname }
@@ -271,20 +274,19 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 	pat := regexp.MustCompile(`Host\s([^\*].*)[\r\n]\s+HostName\s(.*)`)
 	matches := pat.FindAllStringSubmatch(string(content), -1)
 	var items []list.Item
-	var hostSliceMap []map[string]interface{}
+	hostMap := make(HostMap, len(matches))
 
 	for _, match := range matches {
 		host := Item{Host: match[1], Hostname: match[2]}
-		hostMap := map[string]interface{}{"Host": host.Host, "Hostname": host.Hostname}
-		hostSliceMap = append(hostSliceMap, hostMap)
+		hostMap[fmt.Sprint(host.Host)] = HostMap{"host": host.Hostname}
 		items = append(items, host)
 	}
 
-	writeHostsAsRecent(hostSliceMap)
+	writeHostsAsRecent(hostMap)
 	return items, nil
 }
 
-func writeHostsAsRecent(h []map[string]interface{}) {
+func writeHostsAsRecent(h HostMap) {
 	recentlyUsedPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
 
 	if _, err := os.Stat(recentlyUsedPath); errors.Is(err, os.ErrNotExist) {
