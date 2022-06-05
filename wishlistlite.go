@@ -36,13 +36,13 @@ var (
 	versionStyle      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).Render
 )
 
-type item struct {
-	host, hostname string
+type Item struct {
+	Host, Hostname string
 }
 
-func (i item) Title() string       { return i.host }
-func (i item) Description() string { return i.hostname }
-func (i item) FilterValue() string { return i.host }
+func (i Item) Title() string       { return i.Host }
+func (i Item) Description() string { return i.Hostname }
+func (i Item) FilterValue() string { return i.Host }
 
 type keyMap struct {
 	Input   key.Binding
@@ -179,9 +179,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, textinput.Blink)
 
 		case key.Matches(msg, defaultKeyMap.Connect):
-			i, ok := m.list.SelectedItem().(item)
+			i, ok := m.list.SelectedItem().(Item)
 			if ok {
-				m.choice = string(i.host)
+				m.choice = string(i.Host)
 			}
 			return m, tea.Quit
 		}
@@ -270,7 +270,7 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 	matches := pat.FindAllStringSubmatch(string(content), -1)
 	var items []list.Item
 	for _, match := range matches {
-		host := item{host: match[1], hostname: match[2]}
+		host := Item{Host: match[1], Hostname: match[2]}
 		items = append(items, host)
 	}
 
