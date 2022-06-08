@@ -202,7 +202,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
 				m.choice = string(i.Host)
-				reorderItems(i)
+				items := reorderItems(i)
+				writeHostsAsJson(recentlyUsedPath, items, true)
 			}
 			return m, tea.Quit
 
@@ -360,7 +361,7 @@ func moveToFront(needle string, haystack []string) []string {
 	return append(haystack, prev)
 }
 
-func reorderItems(i Item) {
+func reorderItems(i Item) []list.Item {
 	recentItems, err := readRecentlyUsed(recentlyUsedPath)
 	if err != nil {
 		panic(err)
@@ -381,7 +382,7 @@ func reorderItems(i Item) {
 			}
 		}
 	}
-	writeHostsAsJson(recentlyUsedPath, items, true)
+	return items
 }
 
 func getPkgVersion() string {
