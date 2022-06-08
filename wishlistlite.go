@@ -81,6 +81,7 @@ type model struct {
 	choice       string
 	quitting     bool
 	connectInput textinput.Model
+	sorted       bool
 }
 
 func main() {
@@ -168,6 +169,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
+	if m.sorted {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, defaultKeyMap.Sort):
+				m.sorted = false
+				items, _ := getHostsFromSshConfig(sshConfigPath)
+				m.list.SetItems(items)
+				return m, nil
+			}
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
@@ -193,13 +207,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case key.Matches(msg, defaultKeyMap.Sort):
-			defaultKeyMap.Sort.SetEnabled(false)
+			m.sorted = true
 			recentItems, err := readRecentlyUsed(recentlyUsedPath)
 			if err != nil {
 				panic(err)
 			}
 			m.list.SetItems(recentItems)
-			// TODO: revert sort when pressed again
 		}
 	}
 
