@@ -39,6 +39,7 @@ var (
 	recentlyUsedPath  = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
 )
 
+// TODO: Add timestamp field
 type Item struct {
 	Host     string
 	Hostname string
@@ -99,7 +100,7 @@ func main() {
 func New() model {
 	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	items, _ := getHostsFromSshConfig(sshConfigPath)
-	writeHostsAsJson(recentlyUsedPath, items)
+	writeHostsAsJson(recentlyUsedPath, items, false)
 
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
@@ -187,15 +188,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
 				m.choice = string(i.Host)
+				reorderItems(i)
 			}
 			return m, tea.Quit
 
 		case key.Matches(msg, defaultKeyMap.Sort):
-			items, err := readRecentlyUsed(recentlyUsedPath)
+			defaultKeyMap.Sort.SetEnabled(false)
+			recentItems, err := readRecentlyUsed(recentlyUsedPath)
 			if err != nil {
 				panic(err)
 			}
-			m.list.SetItems(items)
+			m.list.SetItems(recentItems)
+			// TODO: revert sort when pressed again
 		}
 	}
 
@@ -290,12 +294,15 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 	return items, nil
 }
 
-func writeHostsAsJson(filePath string, l []list.Item) {
+func writeHostsAsJson(filePath string, l []list.Item, overwrite bool) {
+	result, err := json.Marshal(l)
+	if err != nil {
+		fmt.Printf("Error occurred while marshalling JSON")
+	}
+
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
-		result, err := json.Marshal(l)
-		if err != nil {
-			fmt.Printf("Error occurred while marshalling JSON")
-		}
+		ioutil.WriteFile(filePath, result, 0644)
+	} else if overwrite {
 		ioutil.WriteFile(filePath, result, 0644)
 	}
 }
@@ -316,6 +323,52 @@ func readRecentlyUsed(filePath string) ([]list.Item, error) {
 		items = append(items, Item{Host: item.Host, Hostname: item.Hostname})
 	}
 	return items, nil
+}
+
+// https://github.com/golang/go/wiki/SliceTricks#move-to-front-or-prepend-if-not-present-in-place-if-possible
+func moveToFront(needle string, haystack []string) []string {
+	if len(haystack) != 0 && haystack[0] == needle {
+		return haystack
+	}
+	prev := needle
+	for i, elem := range haystack {
+		switch {
+		case i == 0:
+			haystack[0] = needle
+			prev = elem
+		case elem == needle:
+			haystack[i] = prev
+			return haystack
+		default:
+			haystack[i] = prev
+			prev = elem
+		}
+	}
+	return append(haystack, prev)
+}
+
+func reorderItems(i Item) {
+	recentItems, err := readRecentlyUsed(recentlyUsedPath)
+	if err != nil {
+		panic(err)
+	}
+
+	var sortedHostSlice []string
+	for _, host := range recentItems {
+		sortedHostSlice = append(sortedHostSlice, host.(Item).Title())
+	}
+	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
+
+	var items []list.Item
+	for _, sortedHost := range sortedHostSlice {
+		for n := range recentItems {
+			if sortedHost == recentItems[n].(Item).Host {
+				item := Item{Host: sortedHost, Hostname: recentItems[n].(Item).Hostname}
+				items = append(items, item)
+			}
+		}
+	}
+	writeHostsAsJson(recentlyUsedPath, items, true)
 }
 
 func getPkgVersion() string {
