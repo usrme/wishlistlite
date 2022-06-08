@@ -36,14 +36,13 @@ var (
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow).Padding(0, 0, 0, 2)
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	versionStyle      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).Render
+	recentlyUsedPath  = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
 )
 
 type Item struct {
 	Host     string
 	Hostname string
 }
-
-type HostMap map[string]interface{}
 
 func (i Item) Title() string       { return i.Host }
 func (i Item) Description() string { return i.Hostname }
@@ -100,6 +99,7 @@ func main() {
 func New() model {
 	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	items, _ := getHostsFromSshConfig(sshConfigPath)
+	writeHostsAsJson(recentlyUsedPath, items)
 
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
@@ -189,6 +189,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.choice = string(i.Host)
 			}
 			return m, tea.Quit
+
+		case key.Matches(msg, defaultKeyMap.Sort):
+			items, err := readRecentlyUsed(recentlyUsedPath)
+			if err != nil {
+				panic(err)
+			}
+			m.list.SetItems(items)
 		}
 	}
 
@@ -273,29 +280,42 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 
 	pat := regexp.MustCompile(`Host\s([^\*].*)[\r\n]\s+HostName\s(.*)`)
 	matches := pat.FindAllStringSubmatch(string(content), -1)
-	var items []list.Item
-	hostMap := make(HostMap, len(matches))
 
+	var items []list.Item
 	for _, match := range matches {
 		host := Item{Host: match[1], Hostname: match[2]}
-		hostMap[fmt.Sprint(host.Host)] = HostMap{"host": host.Hostname}
 		items = append(items, host)
 	}
 
-	writeHostsAsRecent(hostMap)
 	return items, nil
 }
 
-func writeHostsAsRecent(h HostMap) {
-	recentlyUsedPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
-
-	if _, err := os.Stat(recentlyUsedPath); errors.Is(err, os.ErrNotExist) {
-		result, err := json.Marshal(h)
+func writeHostsAsJson(filePath string, l []list.Item) {
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+		result, err := json.Marshal(l)
 		if err != nil {
 			fmt.Printf("Error occurred while marshalling JSON")
 		}
-		ioutil.WriteFile(recentlyUsedPath, result, 0644)
+		ioutil.WriteFile(filePath, result, 0644)
 	}
+}
+
+func readRecentlyUsed(filePath string) ([]list.Item, error) {
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		fmt.Printf("Error occurred while reading file: %s", filePath)
+	}
+
+	var payload []Item
+	if err := json.Unmarshal(content, &payload); err != nil {
+		fmt.Printf("Error occurred while reading JSON from: %s", filePath)
+	}
+
+	var items []list.Item
+	for _, item := range payload {
+		items = append(items, Item{Host: item.Host, Hostname: item.Hostname})
+	}
+	return items, nil
 }
 
 func getPkgVersion() string {
