@@ -36,6 +36,7 @@ var (
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow).Padding(0, 0, 0, 2)
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	versionStyle      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).Render
+	sshConfigPath     = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	recentlyUsedPath  = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
 )
 
@@ -98,7 +99,6 @@ func main() {
 }
 
 func New() model {
-	sshConfigPath := fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	items, _ := getHostsFromSshConfig(sshConfigPath)
 	writeHostsAsJson(recentlyUsedPath, items, false)
 
