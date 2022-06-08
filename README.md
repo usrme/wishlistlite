@@ -35,6 +35,8 @@ At the moment there is only one way to use it and that is to just execute `wishl
 
 It's also possible to press the letter `i`, which will allow you to supply a host to connect to on an ad-hoc basis. For example inputting `user@example.com` and pressing Enter will go through the exact process as above. Any of the entries from your SSH configuration are still valid as inputs.
 
+To sort by recently connect to hosts press the letter `r`, which will read the file `~/.ssh/recent.json`, which gets created with the same entries as presented in the default view. After connecting to various hosts that file will be sorted according to which host was connected to recently. Press `r` again to return to the default view.
+
 ### Caveats
 
 Hosts starting with an asterisk are excluded as those (in my use case) usually mean either a `ProxyJump` or a `User` declaration right after.
