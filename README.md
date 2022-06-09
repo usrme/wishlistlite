@@ -14,6 +14,8 @@ I made this a little while after discovering the canonical [Wishlist](https://gi
 go install github.com/usrme/wishlistlite@latest
 ```
 
+- download a binary from the [releases](https://github.com/usrme/wishlistlite/releases) page
+
 - build it yourself (requires Go 1.18+):
 
 ```bash
