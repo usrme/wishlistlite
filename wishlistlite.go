@@ -394,7 +394,7 @@ func reorderItems(i Item) []list.Item {
 	items[0] = Item{
 		Host:      items[0].(Item).Host,
 		Hostname:  items[0].(Item).Hostname,
-		Timestamp: time.Now().Format("Thu, 09 Jun 2022 11:11:11 EEST"),
+		Timestamp: time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
 	}
 	return items
 }
