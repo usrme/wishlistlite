@@ -210,7 +210,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
 				m.choice = string(i.Host)
-				items := reorderItems(i)
+				items := reorderItems(m, i)
 				writeHostsAsJson(recentlyUsedPath, items, true)
 			}
 			return m, tea.Quit
@@ -368,23 +368,18 @@ func moveToFront(needle string, haystack []string) []string {
 	return append(haystack, prev)
 }
 
-func reorderItems(i Item) []list.Item {
-	recentItems, err := readRecentlyUsed(recentlyUsedPath)
-	if err != nil {
-		panic(err)
-	}
-
+func reorderItems(m model, i Item) []list.Item {
 	var sortedHostSlice []string
-	for _, host := range recentItems {
+	for _, host := range m.originalItems {
 		sortedHostSlice = append(sortedHostSlice, host.(Item).Title())
 	}
 	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
 
 	var items []list.Item
 	for _, sortedHost := range sortedHostSlice {
-		for n := range recentItems {
-			if sortedHost == recentItems[n].(Item).Host {
-				item := Item{Host: sortedHost, Hostname: recentItems[n].(Item).Hostname}
+		for n := range m.originalItems {
+			if sortedHost == m.originalItems[n].(Item).Host {
+				item := Item{Host: sortedHost, Hostname: m.originalItems[n].(Item).Hostname}
 				items = append(items, item)
 			}
 		}
