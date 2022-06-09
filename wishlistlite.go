@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -40,10 +41,10 @@ var (
 	recentlyUsedPath  = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
 )
 
-// TODO: Add timestamp field
 type Item struct {
-	Host     string
-	Hostname string
+	Host      string
+	Hostname  string
+	Timestamp string
 }
 
 func (i Item) Title() string       { return i.Host }
@@ -292,7 +293,6 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-// TODO: Write tests for this
 func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -337,7 +337,11 @@ func readRecentlyUsed(filePath string) ([]list.Item, error) {
 
 	var items []list.Item
 	for _, item := range payload {
-		items = append(items, Item{Host: item.Host, Hostname: item.Hostname})
+		if item.Timestamp != "" {
+			items = append(items, Item{Host: item.Host, Hostname: item.Timestamp})
+		} else {
+			items = append(items, Item{Host: item.Host, Hostname: item.Hostname})
+		}
 	}
 	return items, nil
 }
@@ -384,6 +388,13 @@ func reorderItems(i Item) []list.Item {
 				items = append(items, item)
 			}
 		}
+	}
+	// This seemed to be the easiest way to directly modify
+	// the first element in an already sorted slice
+	items[0] = Item{
+		Host:      items[0].(Item).Host,
+		Hostname:  items[0].(Item).Hostname,
+		Timestamp: time.Now().Format("Thu, 09 Jun 2022 11:11:11 EEST"),
 	}
 	return items
 }
