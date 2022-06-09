@@ -77,11 +77,13 @@ var defaultKeyMap = keyMap{
 }
 
 type model struct {
-	list         list.Model
-	choice       string
-	quitting     bool
-	connectInput textinput.Model
-	sorted       bool
+	list          list.Model
+	originalItems []list.Item
+	sortedItems   []list.Item
+	choice        string
+	quitting      bool
+	connectInput  textinput.Model
+	sorted        bool
 }
 
 func main() {
@@ -102,7 +104,6 @@ func main() {
 func New() model {
 	items, _ := getHostsFromSshConfig(sshConfigPath)
 	writeHostsAsJson(recentlyUsedPath, items, false)
-
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
 		Foreground(nordAuroraGreen).
@@ -131,9 +132,16 @@ func New() model {
 	input.Prompt = "Connect to: "
 	input.PromptStyle = inputPromptStyle
 	input.CursorStyle = inputCursorStyle
+
+	sortedItems, err := readRecentlyUsed(recentlyUsedPath)
+	if err != nil {
+		panic(err)
+	}
 	return model{
-		list:         hostList,
-		connectInput: input,
+		list:          hostList,
+		connectInput:  input,
+		originalItems: items,
+		sortedItems:   sortedItems,
 	}
 }
 
@@ -175,8 +183,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch {
 			case key.Matches(msg, defaultKeyMap.Sort):
 				m.sorted = false
-				items, _ := getHostsFromSshConfig(sshConfigPath)
-				m.list.SetItems(items)
+				m.list.SetItems(m.originalItems)
 				return m, nil
 			}
 		}
@@ -209,11 +216,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, defaultKeyMap.Sort):
 			m.sorted = true
-			recentItems, err := readRecentlyUsed(recentlyUsedPath)
-			if err != nil {
-				panic(err)
-			}
-			m.list.SetItems(recentItems)
+			m.list.SetItems(m.sortedItems)
 		}
 	}
 
