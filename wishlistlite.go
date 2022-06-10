@@ -338,7 +338,7 @@ func readRecentlyUsed(filePath string) ([]list.Item, error) {
 	var items []list.Item
 	for _, item := range payload {
 		if item.Timestamp != "" {
-			items = append(items, Item{Host: item.Host, Hostname: item.Timestamp})
+			items = append(items, Item{Host: item.Host, Hostname: item.Hostname, Timestamp: item.Timestamp})
 		} else {
 			items = append(items, Item{Host: item.Host, Hostname: item.Hostname})
 		}
@@ -370,17 +370,20 @@ func moveToFront(needle string, haystack []string) []string {
 
 func reorderItems(m model, i Item) []list.Item {
 	var sortedHostSlice []string
-	for _, host := range m.originalItems {
+	for _, host := range m.sortedItems {
 		sortedHostSlice = append(sortedHostSlice, host.(Item).Title())
 	}
 	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
 
 	var items []list.Item
 	for _, sortedHost := range sortedHostSlice {
-		for n := range m.originalItems {
-			if sortedHost == m.originalItems[n].(Item).Host {
-				item := Item{Host: sortedHost, Hostname: m.originalItems[n].(Item).Hostname}
-				items = append(items, item)
+		for n := range m.sortedItems {
+			if sortedHost == m.sortedItems[n].(Item).Host {
+				if m.sortedItems[n].(Item).Timestamp != "" {
+					items = append(items, Item{Host: sortedHost, Hostname: m.sortedItems[n].(Item).Hostname, Timestamp: m.sortedItems[n].(Item).Timestamp})
+				} else {
+					items = append(items, Item{Host: sortedHost, Hostname: m.sortedItems[n].(Item).Hostname})
+				}
 			}
 		}
 	}
