@@ -23,6 +23,7 @@ import (
 const sshExecutable = "ssh"
 
 var (
+	defDelegate        = list.NewDefaultDelegate()
 	docStyle           = lipgloss.NewStyle().Margin(1, 2)
 	nordAuroraYellow   = lipgloss.Color("#ebcb8b")
 	nordAuroraOrange   = lipgloss.Color("#d08770")
@@ -90,6 +91,7 @@ type model struct {
 	quitting      bool
 	connectInput  textinput.Model
 	sorted        bool
+	conDelegate   list.ItemDelegate
 }
 
 func main() {
@@ -110,18 +112,18 @@ func main() {
 func New() model {
 	items, _ := getHostsFromSshConfig(sshConfigPath)
 	writeHostsAsJson(recentlyUsedPath, items, false)
-	delegate := list.NewDefaultDelegate()
-	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
+
+	defDelegate.Styles.SelectedTitle = defDelegate.Styles.SelectedTitle.
 		Foreground(nordAuroraGreen).
 		BorderLeftForeground(nordAuroraGreen)
-	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.
+	defDelegate.Styles.SelectedDesc = defDelegate.Styles.SelectedDesc.
 		Foreground(dimNordAuroraGreen).
 		BorderLeftForeground(nordAuroraGreen)
-	delegate.ShortHelpFunc = func() []key.Binding {
+	defDelegate.ShortHelpFunc = func() []key.Binding {
 		return []key.Binding{defaultKeyMap.Input, defaultKeyMap.Connect, defaultKeyMap.Cancel, defaultKeyMap.Sort}
 	}
 
-	hostList := list.New(items, delegate, 0, 0)
+	hostList := list.New(items, defDelegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
 	hostList.FilterInput.PromptStyle = filterPromptStyle
@@ -139,6 +141,13 @@ func New() model {
 	input.PromptStyle = inputPromptStyle
 	input.CursorStyle = inputCursorStyle
 
+	// Create separate delegate for when active input is present
+	conDelegate := defDelegate
+	conDelegate.Styles.SelectedTitle = conDelegate.Styles.DimmedTitle
+	conDelegate.Styles.SelectedDesc = conDelegate.Styles.DimmedDesc
+	conDelegate.Styles.NormalTitle = conDelegate.Styles.DimmedTitle
+	conDelegate.Styles.NormalDesc = conDelegate.Styles.DimmedDesc
+
 	sortedItems, err := readRecentlyUsed(recentlyUsedPath)
 	if err != nil {
 		panic(err)
@@ -148,6 +157,7 @@ func New() model {
 		connectInput:  input,
 		originalItems: items,
 		sortedItems:   sortedItems,
+		conDelegate:   conDelegate,
 	}
 }
 
@@ -173,6 +183,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch keypress := msg.String(); keypress {
 			case "esc":
 				m.connectInput.Blur()
+				m.list.SetDelegate(defDelegate)
 			case "enter":
 				m.choice = m.connectInput.Value()
 				return m, tea.Quit
@@ -209,6 +220,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, defaultKeyMap.Input):
 			m.connectInput.Focus()
+			m.list.SetDelegate(m.conDelegate)
 			cmds = append(cmds, textinput.Blink)
 
 		case key.Matches(msg, defaultKeyMap.Connect):
