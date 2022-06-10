@@ -47,8 +47,13 @@ type Item struct {
 	Timestamp string
 }
 
-func (i Item) Title() string       { return i.Host }
-func (i Item) Description() string { return i.Hostname }
+func (i Item) Title() string { return i.Host }
+func (i Item) Description() string {
+	if i.Timestamp != "" {
+		return i.Timestamp
+	}
+	return i.Hostname
+}
 func (i Item) FilterValue() string { return i.Host }
 
 type keyMap struct {
