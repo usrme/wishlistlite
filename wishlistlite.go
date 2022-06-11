@@ -110,8 +110,8 @@ func main() {
 }
 
 func New() model {
-	items, _ := getHostsFromSshConfig(sshConfigPath)
-	writeHostsAsJson(recentlyUsedPath, items, false)
+	items, _ := sshConfigHosts(sshConfigPath)
+	itemsToJson(recentlyUsedPath, items, false)
 
 	defDelegate.Styles.SelectedTitle = defDelegate.Styles.SelectedTitle.
 		Foreground(nordAuroraGreen).
@@ -148,7 +148,7 @@ func New() model {
 	conDelegate.Styles.NormalTitle = conDelegate.Styles.DimmedTitle
 	conDelegate.Styles.NormalDesc = conDelegate.Styles.DimmedDesc
 
-	sortedItems, err := readRecentlyUsed(recentlyUsedPath)
+	sortedItems, err := itemsFromJson(recentlyUsedPath)
 	if err != nil {
 		panic(err)
 	}
@@ -227,8 +227,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
 				m.choice = string(i.Host)
-				items := reorderItems(m, i)
-				writeHostsAsJson(recentlyUsedPath, items, true)
+				items := itemToFront(m, i)
+				itemsToJson(recentlyUsedPath, items, true)
 			}
 			return m, tea.Quit
 
@@ -247,7 +247,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var view string
 
-	m.list.NewStatusMessage(versionStyle(getPkgVersion()))
+	m.list.NewStatusMessage(versionStyle(pkgVersion()))
 
 	if m.connectInput.Focused() {
 		defaultKeyMap.Cancel.SetEnabled(true)
@@ -310,7 +310,7 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
+func sshConfigHosts(filePath string) ([]list.Item, error) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Println("Err")
@@ -328,7 +328,7 @@ func getHostsFromSshConfig(filePath string) ([]list.Item, error) {
 	return items, nil
 }
 
-func writeHostsAsJson(filePath string, l []list.Item, overwrite bool) {
+func itemsToJson(filePath string, l []list.Item, overwrite bool) {
 	result, err := json.Marshal(l)
 	if err != nil {
 		fmt.Printf("Error occurred while marshalling JSON")
@@ -341,7 +341,7 @@ func writeHostsAsJson(filePath string, l []list.Item, overwrite bool) {
 	}
 }
 
-func readRecentlyUsed(filePath string) ([]list.Item, error) {
+func itemsFromJson(filePath string) ([]list.Item, error) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Printf("Error occurred while reading file: %s", filePath)
@@ -385,7 +385,7 @@ func moveToFront(needle string, haystack []string) []string {
 	return append(haystack, prev)
 }
 
-func reorderItems(m model, i Item) []list.Item {
+func itemToFront(m model, i Item) []list.Item {
 	var sortedHostSlice []string
 	for _, host := range m.sortedItems {
 		sortedHostSlice = append(sortedHostSlice, host.(Item).Title())
@@ -414,7 +414,7 @@ func reorderItems(m model, i Item) []list.Item {
 	return items
 }
 
-func getPkgVersion() string {
+func pkgVersion() string {
 	version := "unknown"
 	if info, ok := debug.ReadBuildInfo(); ok {
 		version = info.Main.Version
