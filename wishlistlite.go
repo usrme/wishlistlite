@@ -227,7 +227,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
 				m.choice = string(i.Host)
-				items := itemToFront(m, i)
+				items := timestampFirstItem(itemToFront(m, i))
 				itemsToJson(recentlyUsedPath, items, true)
 			}
 			return m, tea.Quit
@@ -363,6 +363,28 @@ func itemsFromJson(filePath string) ([]list.Item, error) {
 	return items, nil
 }
 
+func itemToFront(m model, i Item) []list.Item {
+	var sortedHostSlice []string
+	for _, host := range m.sortedItems {
+		sortedHostSlice = append(sortedHostSlice, host.(Item).Title())
+	}
+	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
+
+	var items []list.Item
+	for _, sortedHost := range sortedHostSlice {
+		for n := range m.sortedItems {
+			if sortedHost == m.sortedItems[n].(Item).Host {
+				if m.sortedItems[n].(Item).Timestamp != "" {
+					items = append(items, Item{Host: sortedHost, Hostname: m.sortedItems[n].(Item).Hostname, Timestamp: m.sortedItems[n].(Item).Timestamp})
+				} else {
+					items = append(items, Item{Host: sortedHost, Hostname: m.sortedItems[n].(Item).Hostname})
+				}
+			}
+		}
+	}
+	return items
+}
+
 // https://github.com/golang/go/wiki/SliceTricks#move-to-front-or-prepend-if-not-present-in-place-if-possible
 func moveToFront(needle string, haystack []string) []string {
 	if len(haystack) != 0 && haystack[0] == needle {
@@ -385,33 +407,15 @@ func moveToFront(needle string, haystack []string) []string {
 	return append(haystack, prev)
 }
 
-func itemToFront(m model, i Item) []list.Item {
-	var sortedHostSlice []string
-	for _, host := range m.sortedItems {
-		sortedHostSlice = append(sortedHostSlice, host.(Item).Title())
-	}
-	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
-
-	var items []list.Item
-	for _, sortedHost := range sortedHostSlice {
-		for n := range m.sortedItems {
-			if sortedHost == m.sortedItems[n].(Item).Host {
-				if m.sortedItems[n].(Item).Timestamp != "" {
-					items = append(items, Item{Host: sortedHost, Hostname: m.sortedItems[n].(Item).Hostname, Timestamp: m.sortedItems[n].(Item).Timestamp})
-				} else {
-					items = append(items, Item{Host: sortedHost, Hostname: m.sortedItems[n].(Item).Hostname})
-				}
-			}
-		}
-	}
+func timestampFirstItem(l []list.Item) []list.Item {
 	// This seemed to be the easiest way to directly modify
 	// the first element in an already sorted slice
-	items[0] = Item{
-		Host:      items[0].(Item).Host,
-		Hostname:  items[0].(Item).Hostname,
+	l[0] = Item{
+		Host:      l[0].(Item).Host,
+		Hostname:  l[0].(Item).Hostname,
 		Timestamp: time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
 	}
-	return items
+	return l
 }
 
 func pkgVersion() string {
