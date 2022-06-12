@@ -1,0 +1,22 @@
+Match host app1 exec "echo hello"
+
+Host darkstar
+	HostName darkstar.local
+
+Host supernova
+	HostName supernova.local
+	User notme
+	ForwardAgent does-not-matter
+	SendEnv FOO
+	SetEnv BAR=bar
+
+# Host app1
+#	HostName app.foo.local
+#	Port 2222
+
+# Host app2
+#	HostName app.foo.local
+#	User someoneelse
+#	Port 2223
+#	IdentityFile ./testdata/key
+#	ForwardAgent true

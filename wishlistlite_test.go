@@ -13,6 +13,7 @@ func TestSshConfigHosts(t *testing.T) {
 		Want                  int
 	}{
 		{"good", "testdata/good", 11},
+		{"commented", "testdata/commented", 2},
 		{"invalid", "testdata/invalid", 0},
 	}
 	for _, test := range cases {
