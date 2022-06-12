@@ -1,6 +1,5 @@
 # Wishlist Lite
 
-<a href="https://github.com/usrme/wishlistlite/releases"><img src="https://img.shields.io/github/release/usrme/wishlistlite.svg" alt="Latest Release"></a>
 [![Go Report Card](https://goreportcard.com/badge/github.com/usrme/wishlistlite)](https://goreportcard.com/report/github.com/usrme/wishlistlite)
 
 The lesser SSH directory ✨
