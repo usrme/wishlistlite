@@ -1,7 +1,7 @@
 # Wishlist Lite
 
 <!-- markdownlint-disable MD033 -->
-<a href="https://github.com/usrme/wishlistlite"><img src="https://github.com/usrme/wishlistlite/workflows/test/badge.svg" alt="Test Status"></a>
+<a href="https://github.com/usrme/wishlistlite/actions"><img src="https://github.com/usrme/wishlistlite/workflows/test/badge.svg" alt="Test Status"></a>
 [![Go Report Card](https://goreportcard.com/badge/github.com/usrme/wishlistlite)](https://goreportcard.com/report/github.com/usrme/wishlistlite)
 
 The lesser SSH directory ✨
