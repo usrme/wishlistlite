@@ -334,9 +334,7 @@ func itemsToJson(filePath string, l []list.Item, overwrite bool) {
 		fmt.Printf("Error occurred while marshalling JSON")
 	}
 
-	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
-		ioutil.WriteFile(filePath, result, 0644)
-	} else if overwrite {
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) || overwrite {
 		ioutil.WriteFile(filePath, result, 0644)
 	}
 }
