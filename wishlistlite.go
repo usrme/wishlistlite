@@ -100,7 +100,7 @@ func main() {
 
 	m, err := p.StartReturningModel()
 	if err != nil {
-		fmt.Println("Oh no:", err)
+		fmt.Println("failed to start: %w", err)
 		os.Exit(1)
 	}
 
@@ -150,7 +150,8 @@ func New() model {
 
 	sortedItems, err := itemsFromJson(recentlyUsedPath)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	return model{
 		list:          hostList,
@@ -278,18 +279,20 @@ func (m model) View() string {
 
 func verifyExecutable(execName string) string {
 	path, err := exec.LookPath(execName)
+	// using 'panic()' as it's supposedly acceptable during initialization phases
+	// https://go.dev/doc/effective_go#panic
 	if err != nil {
 		panic(err)
 	}
 	return path
 }
 
-func runExecutable(execPath string, args []string) {
-	env := os.Environ()
-	err := syscall.Exec(execPath, args, env)
+func runExecutable(execPath string, args []string) error {
+	err := syscall.Exec(execPath, args, os.Environ())
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("unable to run executable '%s' with args '%v': %w", execPath, args, err)
 	}
+	return nil
 }
 
 func userHomeDir() string {
@@ -313,7 +316,7 @@ func userHomeDir() string {
 func sshConfigHosts(filePath string) ([]list.Item, error) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println("Err")
+		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
 
 	pat := regexp.MustCompile(`Host\s([^\*].*)[\r\n]\s+HostName\s(.*)`)
@@ -324,30 +327,28 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		host := Item{Host: match[1], Hostname: match[2]}
 		items = append(items, host)
 	}
-
 	return items, nil
 }
 
-func itemsToJson(filePath string, l []list.Item, overwrite bool) {
+func itemsToJson(filePath string, l []list.Item, overwrite bool) error {
 	result, err := json.Marshal(l)
 	if err != nil {
-		fmt.Printf("Error occurred while marshalling JSON")
+		return fmt.Errorf("could not marshal JSON: %w", err)
 	}
-
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) || overwrite {
 		ioutil.WriteFile(filePath, result, 0644)
 	}
+	return nil
 }
 
 func itemsFromJson(filePath string) ([]list.Item, error) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Printf("Error occurred while reading file: %s", filePath)
+		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
-
 	var payload []Item
 	if err := json.Unmarshal(content, &payload); err != nil {
-		fmt.Printf("Error occurred while reading JSON from: %s", filePath)
+		return nil, fmt.Errorf("could not unmarshal JSON from '%s': %w", filePath, err)
 	}
 
 	var items []list.Item
@@ -421,6 +422,5 @@ func pkgVersion() string {
 	if info, ok := debug.ReadBuildInfo(); ok {
 		version = info.Main.Version
 	}
-
 	return version
 }
