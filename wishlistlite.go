@@ -320,7 +320,7 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 	}
 
 	// grab all 'Host' ('Host' not included) and 'HostName' ('HostName' included)
-	pat := regexp.MustCompile(`Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
+	pat := regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
 	mainMatches := pat.FindAllStringSubmatch(string(content), -1)
 
 	var items []list.Item
