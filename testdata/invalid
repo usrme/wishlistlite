@@ -1,0 +1,3 @@
+# https://github.com/charmbracelet/wishlist/blob/main/sshconfig/testdata/invalid_node
+Host invalid
+  HostNameinvalid-because-no-spaces
