@@ -319,13 +319,27 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
 
-	pat := regexp.MustCompile(`Host\s([^\*].*)[\r\n]\s+HostName\s(.*)`)
-	matches := pat.FindAllStringSubmatch(string(content), -1)
+	// grab all 'Host' ('Host' not included) and 'HostName' ('HostName' included)
+	pat := regexp.MustCompile(`Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
+	mainMatches := pat.FindAllStringSubmatch(string(content), -1)
 
 	var items []list.Item
-	for _, match := range matches {
-		host := Item{Host: match[1], Hostname: match[2]}
-		items = append(items, host)
+	for _, m := range mainMatches {
+		// if 'HostName' was present
+		if m[2] != "" {
+			// make sure 'HostName' was defined correctly (i.e. followed by a space)
+			pat := regexp.MustCompile(`HostName\s(.*)`)
+			secMatches := pat.FindAllStringSubmatch(m[2], -1)
+			for _, n := range secMatches {
+				host := Item{Host: m[1], Hostname: n[1]}
+				items = append(items, host)
+			}
+		} else {
+			// if there no 'HostName' was found just add the 'Host'
+			// value as the description in the 'Item' struct
+			host := Item{Host: m[1], Hostname: m[1]}
+			items = append(items, host)
+		}
 	}
 	return items, nil
 }
