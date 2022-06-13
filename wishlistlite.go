@@ -335,7 +335,7 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 				items = append(items, host)
 			}
 		} else {
-			// if there no 'HostName' was found just add the 'Host'
+			// if no 'HostName' was found just add the 'Host'
 			// value as the description in the 'Item' struct
 			host := Item{Host: m[1], Hostname: m[1]}
 			items = append(items, host)
