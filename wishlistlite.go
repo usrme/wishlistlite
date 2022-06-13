@@ -201,6 +201,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch {
 			case key.Matches(msg, defaultKeyMap.Sort):
 				m.sorted = false
+				defaultKeyMap.Sort.SetHelp("r", "recently used")
 				m.list.SetItems(m.originalItems)
 				return m, nil
 			}
@@ -235,6 +236,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, defaultKeyMap.Sort):
 			m.sorted = true
+			defaultKeyMap.Sort.SetHelp("r", "revert to default")
 			m.list.SetItems(m.sortedItems)
 		}
 	}
