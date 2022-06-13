@@ -329,16 +329,11 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		if m[2] != "" {
 			// make sure 'HostName' was defined correctly (i.e. followed by a space)
 			pat := regexp.MustCompile(`HostName\s(.*)`)
-			secMatches := pat.FindAllStringSubmatch(m[2], -1)
-			for _, n := range secMatches {
-				host := Item{Host: m[1], Hostname: n[1]}
-				items = append(items, host)
+			for _, n := range pat.FindAllStringSubmatch(m[2], -1) {
+				items = append(items, Item{Host: m[1], Hostname: n[1]})
 			}
 		} else {
-			// if no 'HostName' was found just add the 'Host'
-			// value as the description in the 'Item' struct
-			host := Item{Host: m[1], Hostname: m[1]}
-			items = append(items, host)
+			items = append(items, Item{Host: m[1], Hostname: m[1]})
 		}
 	}
 	return items, nil
