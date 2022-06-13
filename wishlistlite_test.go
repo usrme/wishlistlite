@@ -58,3 +58,31 @@ func TestSshConfigHosts(t *testing.T) {
 		}
 	})
 }
+
+func TestMoveToFront(t *testing.T) {
+	cases := []struct {
+		Description, Needle string
+		Haystack, Want      []string
+	}{
+		{"add if empty", "a", []string{}, []string{"a"}},
+		{"return same", "a", []string{"a"}, []string{"a"}},
+		{"move to front", "c", []string{"a", "b", "c", "d", "e"}, []string{"c", "a", "b", "d", "e"}},
+		{"prepend if missing", "f", []string{"a", "b", "c", "d", "e"}, []string{"f", "a", "b", "c", "d", "e"}},
+	}
+	for _, test := range cases {
+		t.Run(test.Description, func(t *testing.T) {
+			got := moveToFront(test.Needle, test.Haystack)
+
+			if len(got) != len(test.Want) {
+				t.Errorf("got %d, wanted %d", len(got), len(test.Want))
+			}
+
+			for i, v := range got {
+				if v != test.Want[i] {
+					log.Println(got)
+					t.Errorf("got %s, wanted %s", v, test.Want[i])
+				}
+			}
+		})
+	}
+}
