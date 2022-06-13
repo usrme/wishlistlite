@@ -44,21 +44,7 @@ To sort by recently connected to hosts press the letter `r`, which will read the
 
 Hosts starting with an asterisk are excluded as those (in my use case) usually mean either a `ProxyJump` or a `User` declaration right after.
 
-Before starting the execution there is a verification that is made that the `ssh` executable exists, but there are still some other assumptions that are made:
-
-- any necessary SSH keys are already loaded into an SSH agent;
-- the SSH configuration is similar to this:
-
-```text
-Host tst001
-  HostName tst001.example.com
-
-Host tst002
-  HostName tst002.example.com
-
-Host tst003
-  HostName tst003.example.com
-```
+Before starting the execution there is a verification that is made that the `ssh` executable exists and that any necessary SSH keys are already loaded into an SSH agent.
 
 ## Acknowledgments
 
