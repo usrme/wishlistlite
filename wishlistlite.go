@@ -214,7 +214,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
-		// Don't match any of the keys below if we're actively filtering
+		// don't match any of the keys below if we're actively filtering
 		if m.list.FilterState() == list.Filtering {
 			break
 		}
