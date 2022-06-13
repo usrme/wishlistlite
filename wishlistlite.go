@@ -384,14 +384,17 @@ func itemToFront(m model, i Item) []list.Item {
 	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
 
 	var items []list.Item
+	var item list.Item
 	for _, sortedHost := range sortedHostSlice {
 		for n := range m.sortedItems {
-			if sortedHost == m.sortedItems[n].(Item).Host {
-				if m.sortedItems[n].(Item).Timestamp != "" {
-					items = append(items, Item{Host: sortedHost, Hostname: m.sortedItems[n].(Item).Hostname, Timestamp: m.sortedItems[n].(Item).Timestamp})
+			c := m.sortedItems[n].(Item)
+			if sortedHost == c.Host {
+				if c.Timestamp != "" {
+					item = Item{Host: sortedHost, Hostname: c.Hostname, Timestamp: c.Timestamp}
 				} else {
-					items = append(items, Item{Host: sortedHost, Hostname: m.sortedItems[n].(Item).Hostname})
+					item = Item{Host: sortedHost, Hostname: c.Hostname}
 				}
+				items = append(items, item)
 			}
 		}
 	}
