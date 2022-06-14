@@ -1,0 +1,17 @@
+[
+    {
+        "Host": "supernova",
+        "Hostname": "supernova.local",
+        "Timestamp": "Sun, 12 Jun 2022 14:59:28 EEST"
+    },
+    {
+        "Host": "darkstar",
+        "Hostname": "darkstar.local",
+        "Timestamp": ""
+    },
+    {
+        "Host": "app1",
+        "Hostname": "app.foo.local",
+        "Timestamp": ""
+    }
+]

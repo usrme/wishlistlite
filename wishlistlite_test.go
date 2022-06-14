@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -132,4 +134,35 @@ func TestItemToFront(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestItemsFromJson(t *testing.T) {
+	t.Run("missing file", func(t *testing.T) {
+		_, err := itemsFromJson("testdata/missing.json")
+		if !strings.HasPrefix(fmt.Sprint(err), "could not read file") {
+			t.Fatal(err)
+		}
+	})
+	t.Run("invalid JSON", func(t *testing.T) {
+		_, err := itemsFromJson("testdata/invalid")
+		if !strings.HasPrefix(fmt.Sprint(err), "could not unmarshal JSON") {
+			t.Fatal(err)
+		}
+	})
+	t.Run("expected", func(t *testing.T) {
+		expected := []list.Item{
+			Item{Host: "supernova", Hostname: "supernova.local", Timestamp: "Sun, 12 Jun 2022 14:59:28 EEST"},
+			Item{Host: "darkstar", Hostname: "darkstar.local"},
+			Item{Host: "app1", Hostname: "app.foo.local"},
+		}
+		sorted, err := itemsFromJson("testdata/recent.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := range sorted {
+			if sorted[i] != expected[i] {
+				t.Errorf("got %s, wanted %d", sorted[i], expected[i])
+			}
+		}
+	})
 }
