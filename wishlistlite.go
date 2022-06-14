@@ -229,7 +229,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
 				m.choice = string(i.Host)
-				items := timestampFirstItem(itemToFront(m, i))
+				items := timestampFirstItem(itemToFront(m.sortedItems, i))
 				itemsToJson(recentlyUsedPath, items, true)
 			}
 			return m, tea.Quit
@@ -373,9 +373,9 @@ func itemsFromJson(filePath string) ([]list.Item, error) {
 	return items, nil
 }
 
-func itemToFront(m model, i Item) []list.Item {
+func itemToFront(sorted []list.Item, i Item) []list.Item {
 	var sortedHostSlice []string
-	for _, host := range m.sortedItems {
+	for _, host := range sorted {
 		sortedHostSlice = append(sortedHostSlice, host.(Item).Title())
 	}
 	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
@@ -383,8 +383,8 @@ func itemToFront(m model, i Item) []list.Item {
 	var items []list.Item
 	var item list.Item
 	for _, sortedHost := range sortedHostSlice {
-		for n := range m.sortedItems {
-			c := m.sortedItems[n].(Item)
+		for n := range sorted {
+			c := sorted[n].(Item)
 			if sortedHost == c.Host {
 				if c.Timestamp != "" {
 					item = Item{Host: sortedHost, Hostname: c.Hostname, Timestamp: c.Timestamp}
