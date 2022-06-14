@@ -86,3 +86,50 @@ func TestMoveToFront(t *testing.T) {
 		})
 	}
 }
+
+func TestItemToFront(t *testing.T) {
+	cases := []struct {
+		Description string
+		Item        Item
+		Have, Want  []list.Item
+	}{
+		{
+			"without timestamp",
+			Item{Host: "supernova", Hostname: "supernova.local"},
+			[]list.Item{
+				Item{Host: "darkstar", Hostname: "darkstar.local"},
+				Item{Host: "supernova", Hostname: "supernova.local"},
+			},
+			[]list.Item{
+				Item{Host: "supernova", Hostname: "supernova.local"},
+				Item{Host: "darkstar", Hostname: "darkstar.local"},
+			},
+		},
+		{
+			"with timestamp",
+			Item{Host: "supernova", Hostname: "supernova.local"},
+			[]list.Item{
+				Item{Host: "darkstar", Hostname: "darkstar.local"},
+				Item{Host: "supernova", Hostname: "supernova.local", Timestamp: "Sun, 12 Jun 2022 14:59:28 EEST"},
+			},
+			[]list.Item{
+				Item{Host: "supernova", Hostname: "supernova.local", Timestamp: "Sun, 12 Jun 2022 14:59:28 EEST"},
+				Item{Host: "darkstar", Hostname: "darkstar.local"},
+			},
+		},
+	}
+	for _, test := range cases {
+		t.Run(test.Description, func(t *testing.T) {
+			got := itemToFront(test.Have, test.Item)
+
+			if len(got) != len(test.Want) {
+				t.Errorf("got %d, wanted %d", len(got), len(test.Want))
+			}
+
+			if got[0] != test.Want[0] {
+				log.Println(got)
+				t.Errorf("got %s, wanted %s", got[0], test.Item)
+			}
+		})
+	}
+}
