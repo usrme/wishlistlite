@@ -380,10 +380,10 @@ func itemToFront(sorted []list.Item, i Item) []list.Item {
 	hostMap := make(map[string]Item)     // map for quickly getting attributes of a single item
 
 	for _, host := range sorted {
-		title := host.(Item).Title()
-		sortedHostSlice = append(sortedHostSlice, title)
-		hostMapBool[title] = true
-		hostMap[title] = host.(Item)
+		hostShort := host.(Item).Host
+		sortedHostSlice = append(sortedHostSlice, hostShort)
+		hostMapBool[hostShort] = true
+		hostMap[hostShort] = host.(Item)
 	}
 	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
 
@@ -392,11 +392,11 @@ func itemToFront(sorted []list.Item, i Item) []list.Item {
 		item  list.Item
 	)
 
-	for _, hostTitle := range sortedHostSlice {
-		if _, ok := hostMapBool[hostTitle]; !ok && hostTitle == i.Host {
+	for _, hostShort := range sortedHostSlice {
+		if _, ok := hostMapBool[hostShort]; !ok && hostShort == i.Host {
 			item = Item{Host: i.Host, Hostname: i.Hostname, Timestamp: i.Timestamp}
 		} else {
-			c := hostMap[hostTitle]
+			c := hostMap[hostShort]
 			item = Item{Host: c.Host, Hostname: c.Hostname, Timestamp: c.Timestamp}
 		}
 		items = append(items, item)
