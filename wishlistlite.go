@@ -346,6 +346,7 @@ func itemsToJson(filePath string, l []list.Item, overwrite bool) error {
 	if err != nil {
 		return fmt.Errorf("could not marshal JSON: %w", err)
 	}
+	// Only write file if it doesn't already exist or an explicit overwrite was requested
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) || overwrite {
 		ioutil.WriteFile(filePath, result, 0644)
 	}
