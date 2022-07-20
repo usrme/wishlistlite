@@ -374,26 +374,31 @@ func itemsFromJson(filePath string) ([]list.Item, error) {
 }
 
 func itemToFront(sorted []list.Item, i Item) []list.Item {
-	var sortedHostSlice []string
+	var sortedHostSlice []string         // slice for sorting
+	hostMapBool := make(map[string]bool) // map for checking whether element already exists
+	hostMap := make(map[string]Item)     // map for quickly getting attributes of a single item
+
 	for _, host := range sorted {
-		sortedHostSlice = append(sortedHostSlice, host.(Item).Title())
+		title := host.(Item).Title()
+		sortedHostSlice = append(sortedHostSlice, title)
+		hostMapBool[title] = true
+		hostMap[title] = host.(Item)
 	}
 	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
 
-	var items []list.Item
-	var item list.Item
-	for _, sortedHost := range sortedHostSlice {
-		for n := range sorted {
-			c := sorted[n].(Item)
-			if sortedHost == c.Host {
-				if c.Timestamp != "" {
-					item = Item{Host: sortedHost, Hostname: c.Hostname, Timestamp: c.Timestamp}
-				} else {
-					item = Item{Host: sortedHost, Hostname: c.Hostname}
-				}
-				items = append(items, item)
-			}
+	var (
+		items []list.Item
+		item  list.Item
+	)
+
+	for _, hostTitle := range sortedHostSlice {
+		if _, ok := hostMapBool[hostTitle]; !ok && hostTitle == i.Host {
+			item = Item{Host: i.Host, Hostname: i.Hostname, Timestamp: i.Timestamp}
+		} else {
+			c := hostMap[hostTitle]
+			item = Item{Host: c.Host, Hostname: c.Hostname, Timestamp: c.Timestamp}
 		}
+		items = append(items, item)
 	}
 	return items
 }
