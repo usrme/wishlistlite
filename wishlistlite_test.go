@@ -119,6 +119,19 @@ func TestItemToFront(t *testing.T) {
 				Item{Host: "darkstar", Hostname: "darkstar.local"},
 			},
 		},
+		{
+			"new host",
+			Item{Host: "battlestar", Hostname: "battlestar.local"},
+			[]list.Item{
+				Item{Host: "darkstar", Hostname: "darkstar.local"},
+				Item{Host: "supernova", Hostname: "supernova.local", Timestamp: "Sun, 12 Jun 2022 14:59:28 EEST"},
+			},
+			[]list.Item{
+				Item{Host: "battlestar", Hostname: "battlestar.local"},
+				Item{Host: "supernova", Hostname: "supernova.local", Timestamp: "Sun, 12 Jun 2022 14:59:28 EEST"},
+				Item{Host: "darkstar", Hostname: "darkstar.local"},
+			},
+		},
 	}
 	for _, test := range cases {
 		t.Run(test.Description, func(t *testing.T) {
