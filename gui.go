@@ -139,6 +139,38 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m model) View() string {
+	var view string
+
+	m.list.NewStatusMessage(versionStyle(pkgVersion()))
+
+	if m.connectInput.Focused() {
+		customKeys.Cancel.SetEnabled(true)
+		customKeys.Input.SetEnabled(false)
+		customKeys.Sort.SetEnabled(false)
+		m.list.KeyMap.CursorUp.SetEnabled(false)
+		m.list.KeyMap.CursorDown.SetEnabled(false)
+		m.list.KeyMap.Filter.SetEnabled(false)
+		m.list.KeyMap.Quit.SetEnabled(false)
+		m.list.KeyMap.ShowFullHelp.SetEnabled(false)
+
+		m.list.SetShowTitle(false)
+		view += m.connectInput.View()
+	} else {
+		customKeys.Cancel.SetEnabled(false)
+		customKeys.Input.SetEnabled(true)
+		customKeys.Sort.SetEnabled(true)
+		m.list.KeyMap.CursorUp.SetEnabled(true)
+		m.list.KeyMap.CursorDown.SetEnabled(true)
+		m.list.KeyMap.Filter.SetEnabled(true)
+		m.list.KeyMap.Quit.SetEnabled(true)
+		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
+	}
+	view += m.list.View()
+
+	return docStyle.Render(view)
+}
+
 func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -183,36 +215,4 @@ func (m model) recordConnection(msg tea.Msg) (tea.Model, tea.Cmd) {
 		itemsToJson(recentlyUsedPath, items, true)
 	}
 	return m, tea.Quit
-}
-
-func (m model) View() string {
-	var view string
-
-	m.list.NewStatusMessage(versionStyle(pkgVersion()))
-
-	if m.connectInput.Focused() {
-		customKeys.Cancel.SetEnabled(true)
-		customKeys.Input.SetEnabled(false)
-		customKeys.Sort.SetEnabled(false)
-		m.list.KeyMap.CursorUp.SetEnabled(false)
-		m.list.KeyMap.CursorDown.SetEnabled(false)
-		m.list.KeyMap.Filter.SetEnabled(false)
-		m.list.KeyMap.Quit.SetEnabled(false)
-		m.list.KeyMap.ShowFullHelp.SetEnabled(false)
-
-		m.list.SetShowTitle(false)
-		view += m.connectInput.View()
-	} else {
-		customKeys.Cancel.SetEnabled(false)
-		customKeys.Input.SetEnabled(true)
-		customKeys.Sort.SetEnabled(true)
-		m.list.KeyMap.CursorUp.SetEnabled(true)
-		m.list.KeyMap.CursorDown.SetEnabled(true)
-		m.list.KeyMap.Filter.SetEnabled(true)
-		m.list.KeyMap.Quit.SetEnabled(true)
-		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
-	}
-	view += m.list.View()
-
-	return docStyle.Render(view)
 }
