@@ -102,32 +102,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.connectInput.Focused() {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch keypress := msg.String(); keypress {
-			case "esc":
-				m.connectInput.Blur()
-			case "enter":
-				m.choice = m.connectInput.Value()
-				return m, tea.Quit
-			}
-		}
-		var cmd tea.Cmd
-		m.connectInput, cmd = m.connectInput.Update(msg)
-		return m, cmd
+		return m.updateCustomInput(msg)
 	}
 
 	if m.sorted {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch {
-			case key.Matches(msg, customKeys.Sort):
-				m.sorted = false
-				customKeys.Sort.SetHelp("r", "recently used")
-				m.list.SetItems(m.originalItems)
-				return m, nil
-			}
-		}
+		return m.unsort(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -147,18 +126,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, textinput.Blink)
 
 		case key.Matches(msg, customKeys.Connect):
-			i, ok := m.list.SelectedItem().(Item)
-			if ok {
-				m.choice = string(i.Host)
-				items := timestampFirstItem(itemToFront(m.sortedItems, i))
-				itemsToJson(recentlyUsedPath, items, true)
-			}
-			return m, tea.Quit
+			return m.recordConnection(msg)
 
 		case key.Matches(msg, customKeys.Sort):
-			m.sorted = true
-			customKeys.Sort.SetHelp("r", "revert to default")
-			m.list.SetItems(m.sortedItems)
+			m.sort(msg)
 		}
 	}
 
@@ -166,6 +137,52 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch keypress := msg.String(); keypress {
+		case "esc":
+			m.connectInput.Blur()
+		case "enter":
+			m.choice = m.connectInput.Value()
+			return m, tea.Quit
+		}
+	}
+	var cmd tea.Cmd
+	m.connectInput, cmd = m.connectInput.Update(msg)
+	return m, cmd
+}
+
+func (m model) unsort(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, customKeys.Sort):
+			m.sorted = false
+			customKeys.Sort.SetHelp("r", "recently used")
+			m.list.SetItems(m.originalItems)
+			return m, nil
+		}
+	}
+	return m, nil
+}
+
+func (m model) sort(msg tea.Msg) {
+	m.sorted = true
+	customKeys.Sort.SetHelp("r", "revert to default")
+	m.list.SetItems(m.sortedItems)
+}
+
+func (m model) recordConnection(msg tea.Msg) (tea.Model, tea.Cmd) {
+	i, ok := m.list.SelectedItem().(Item)
+	if ok {
+		m.choice = string(i.Host)
+		items := timestampFirstItem(itemToFront(m.sortedItems, i))
+		itemsToJson(recentlyUsedPath, items, true)
+	}
+	return m, tea.Quit
 }
 
 func (m model) View() string {
