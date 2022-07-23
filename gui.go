@@ -11,10 +11,12 @@ import (
 const sshExecutable = "ssh"
 
 var (
-	docStyle         = lipgloss.NewStyle().Margin(1, 2)
-	nordAuroraYellow = lipgloss.Color("#ebcb8b")
-	nordAuroraOrange = lipgloss.Color("#d08770")
-	titleStyle       = lipgloss.NewStyle().
+	docStyle           = lipgloss.NewStyle().Margin(1, 2)
+	nordAuroraYellow   = lipgloss.Color("#ebcb8b")
+	nordAuroraOrange   = lipgloss.Color("#d08770")
+	nordAuroraGreen    = lipgloss.Color("#a3be8c")
+	dimNordAuroraGreen = lipgloss.Color("#7a8e69")
+	titleStyle         = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#fffdf5ff")).
 				Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
 				Padding(0, 1)
@@ -41,18 +43,36 @@ func (i Item) Description() string {
 func (i Item) FilterValue() string { return i.Host }
 
 type model struct {
-	list          list.Model
-	originalItems []list.Item
-	sortedItems   []list.Item
-	choice        string
-	quitting      bool
-	connectInput  textinput.Model
-	sorted        bool
+	list            list.Model
+	originalItems   []list.Item
+	sortedItems     []list.Item
+	choice          string
+	quitting        bool
+	connectInput    textinput.Model
+	sorted          bool
+	defaultDelegate list.ItemDelegate
+	connectDelegate list.ItemDelegate
 }
 
 func newModel(items, sortedItems []list.Item) model {
+	// set up default delegate for styling
+	defaultDelegate := list.NewDefaultDelegate()
+	defaultDelegate.Styles.SelectedTitle = defaultDelegate.Styles.SelectedTitle.
+		Foreground(nordAuroraGreen).
+		BorderLeftForeground(nordAuroraGreen)
+	defaultDelegate.Styles.SelectedDesc = defaultDelegate.Styles.SelectedDesc.
+		Foreground(dimNordAuroraGreen).
+		BorderLeftForeground(nordAuroraGreen)
+
+	// create separate delegate for when active input is present
+	connectDelegate := defaultDelegate
+	connectDelegate.Styles.SelectedTitle = connectDelegate.Styles.DimmedTitle
+	connectDelegate.Styles.SelectedDesc = connectDelegate.Styles.DimmedDesc
+	connectDelegate.Styles.NormalTitle = connectDelegate.Styles.DimmedTitle
+	connectDelegate.Styles.NormalDesc = connectDelegate.Styles.DimmedDesc
+
 	// set up main list
-	hostList := list.New(items, list.NewDefaultDelegate(), 0, 0)
+	hostList := list.New(items, defaultDelegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
 	hostList.FilterInput.PromptStyle = filterPromptStyle
@@ -78,10 +98,12 @@ func newModel(items, sortedItems []list.Item) model {
 	input.CursorStyle = inputCursorStyle
 
 	return model{
-		list:          hostList,
-		connectInput:  input,
-		originalItems: items,
-		sortedItems:   sortedItems,
+		list:            hostList,
+		connectInput:    input,
+		originalItems:   items,
+		sortedItems:     sortedItems,
+		defaultDelegate: defaultDelegate,
+		connectDelegate: connectDelegate,
 	}
 }
 
@@ -123,13 +145,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, customKeys.Input):
 			m.connectInput.Focus()
+			m.list.SetDelegate(m.connectDelegate)
 			cmds = append(cmds, textinput.Blink)
 
 		case key.Matches(msg, customKeys.Connect):
 			return m.recordConnection(msg)
 
 		case key.Matches(msg, customKeys.Sort):
-			m.sort(msg)
+			m = m.sort(msg)
 		}
 	}
 
@@ -177,6 +200,7 @@ func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch keypress := msg.String(); keypress {
 		case "esc":
 			m.connectInput.Blur()
+			m.list.SetDelegate(m.defaultDelegate)
 		case "enter":
 			m.choice = m.connectInput.Value()
 			return m, tea.Quit
@@ -201,10 +225,12 @@ func (m model) unsort(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) sort(msg tea.Msg) {
+func (m model) sort(msg tea.Msg) model {
 	m.sorted = true
 	customKeys.Sort.SetHelp("r", "revert to default")
 	m.list.SetItems(m.sortedItems)
+
+	return m
 }
 
 func (m model) recordConnection(msg tea.Msg) (tea.Model, tea.Cmd) {
