@@ -128,7 +128,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.sorted {
-		return m.unsort(msg)
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, customKeys.Sort):
+				return m.unsort(msg)
+			}
+		}
 	}
 
 	switch msg := msg.(type) {
@@ -156,7 +162,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, customKeys.Sort):
-			m = m.sort(msg)
+			return m.sort(msg)
 		}
 	}
 
@@ -226,24 +232,17 @@ func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) unsort(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, customKeys.Sort):
-			m.sorted = false
-			customKeys.Sort.SetHelp("r", "recently used")
-			m.list.SetItems(m.originalItems)
-			return m, nil
-		}
-	}
+	m.sorted = false
+	customKeys.Sort.SetHelp("r", "recently used")
+	m.list.SetItems(m.originalItems)
 	return m, nil
 }
 
-func (m model) sort(msg tea.Msg) model {
+func (m model) sort(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.sorted = true
 	customKeys.Sort.SetHelp("r", "revert to default")
 	m.list.SetItems(m.sortedItems)
-	return m
+	return m, nil
 }
 
 func (m model) recordConnection(i Item) (tea.Model, tea.Cmd) {
