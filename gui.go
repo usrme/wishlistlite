@@ -182,6 +182,7 @@ func (m model) View() string {
 
 		m.list.SetShowTitle(false)
 		sections = append(sections, m.connectInput.View())
+		m.list.Styles.HelpStyle.Padding(0, 0, 1, 2)
 		sections = append(sections, m.list.View())
 		view = lipgloss.JoinVertical(lipgloss.Left, sections...)
 		return lipgloss.NewStyle().Margin(1, 0, 0, 2).Render(view)
@@ -194,6 +195,7 @@ func (m model) View() string {
 		m.list.KeyMap.Filter.SetEnabled(true)
 		m.list.KeyMap.Quit.SetEnabled(true)
 		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
+		m.list.Styles.HelpStyle.Padding(0, 0, 0, 2)
 		sections = append(sections, m.list.View())
 		view = lipgloss.JoinVertical(lipgloss.Left, sections...)
 		return docStyle.Render(view)
