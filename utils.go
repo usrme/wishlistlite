@@ -98,9 +98,20 @@ func itemToFront(sorted []list.Item, i Item) []list.Item {
 
 	for _, host := range sorted {
 		hostShort := host.(Item).Host
-		sortedHostSlice = append(sortedHostSlice, hostShort)
 		hostMapBool[hostShort] = true
 		hostMap[hostShort] = host.(Item)
+	}
+
+	// if in ad hoc connections the input host is an already known host,
+	// then rewrite the incoming Item's fields to match existing host's
+	if _, ok := hostMapBool[i.Host]; ok {
+		existing := hostMap[i.Host]
+		i.Hostname = existing.Hostname
+	}
+
+	for _, host := range sorted {
+		hostShort := host.(Item).Host
+		sortedHostSlice = append(sortedHostSlice, hostShort)
 	}
 	sortedHostSlice = moveToFront(i.Host, sortedHostSlice)
 

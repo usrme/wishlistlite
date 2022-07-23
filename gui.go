@@ -215,7 +215,8 @@ func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetDelegate(m.defaultDelegate)
 		case "enter":
 			m.choice = m.connectInput.Value()
-			return m, tea.Quit
+			i := Item{Host: m.choice, Hostname: m.choice}
+			return m.recordConnection(i)
 		}
 	}
 	var cmd tea.Cmd
