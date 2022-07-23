@@ -163,7 +163,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	var view string
+	var (
+		view     string
+		sections []string
+	)
 
 	m.list.NewStatusMessage(versionStyle(pkgVersion()))
 
@@ -178,7 +181,10 @@ func (m model) View() string {
 		m.list.KeyMap.ShowFullHelp.SetEnabled(false)
 
 		m.list.SetShowTitle(false)
-		view += m.connectInput.View()
+		sections = append(sections, m.connectInput.View())
+		sections = append(sections, m.list.View())
+		view = lipgloss.JoinVertical(lipgloss.Left, sections...)
+		return lipgloss.NewStyle().Margin(1, 0, 0, 2).Render(view)
 	} else {
 		customKeys.Cancel.SetEnabled(false)
 		customKeys.Input.SetEnabled(true)
@@ -188,10 +194,10 @@ func (m model) View() string {
 		m.list.KeyMap.Filter.SetEnabled(true)
 		m.list.KeyMap.Quit.SetEnabled(true)
 		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
+		sections = append(sections, m.list.View())
+		view = lipgloss.JoinVertical(lipgloss.Left, sections...)
+		return docStyle.Render(view)
 	}
-	view += m.list.View()
-
-	return docStyle.Render(view)
 }
 
 func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
