@@ -149,7 +149,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, textinput.Blink)
 
 		case key.Matches(msg, customKeys.Connect):
-			return m.recordConnection(msg)
+			i, ok := m.list.SelectedItem().(Item)
+			if ok {
+				m.choice = string(i.Host)
+				return m.recordConnection(i)
+			}
 
 		case key.Matches(msg, customKeys.Sort):
 			m = m.sort(msg)
@@ -241,12 +245,8 @@ func (m model) sort(msg tea.Msg) model {
 	return m
 }
 
-func (m model) recordConnection(msg tea.Msg) (tea.Model, tea.Cmd) {
-	i, ok := m.list.SelectedItem().(Item)
-	if ok {
-		m.choice = string(i.Host)
-		items := timestampFirstItem(itemToFront(m.sortedItems, i))
-		itemsToJson(recentlyUsedPath, items, true)
-	}
+func (m model) recordConnection(i Item) (tea.Model, tea.Cmd) {
+	items := timestampFirstItem(itemToFront(m.sortedItems, i))
+	itemsToJson(recentlyUsedPath, items, true)
 	return m, tea.Quit
 }
