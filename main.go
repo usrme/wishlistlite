@@ -20,6 +20,7 @@ import (
 // sshExecutable is the name of the SSH executable present on the local system.
 const sshExecutable = "ssh"
 
+// Paths used by package.
 var (
 	sshConfigPath    = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
 	recentlyUsedPath = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
