@@ -1,3 +1,11 @@
+// Package wishlistlite is a pared down version of Charm's Wishlist.
+//
+// It leverages SSH-related executables already present on the local system to
+// simplify everything and relies on just regular expressions to parse an SSH
+// configuration.
+//
+// Its aim was to provide a more hands-on way to learn about Go and isn't to be
+// taken seriously.
 package main
 
 import (
