@@ -14,6 +14,10 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 )
 
+// userHomeDir returns a string literal representing a path to the user's home
+// directory who is executing the program.
+//
+// The returned value depends on the operating system.
 func userHomeDir() string {
 	switch runtime.GOOS {
 	case "windows":
