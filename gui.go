@@ -8,8 +8,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const sshExecutable = "ssh"
-
 var (
 	docStyle           = lipgloss.NewStyle().Margin(1, 2)
 	nordAuroraYellow   = lipgloss.Color("#ebcb8b")
