@@ -78,7 +78,7 @@ func newModel(items, sortedItems []list.Item) model {
 
 	// make sure custom keys have help text available
 	hostList.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{customKeys.Input, customKeys.Connect, customKeys.Cancel, customKeys.Sort}
+		return []key.Binding{customKeys.Input, customKeys.Connect, customKeys.Cancel, customKeys.Sort, customKeys.Delete}
 	}
 	hostList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
@@ -86,6 +86,7 @@ func newModel(items, sortedItems []list.Item) model {
 			customKeys.Connect,
 			customKeys.Cancel,
 			customKeys.Sort,
+			customKeys.Delete,
 		}
 	}
 
@@ -129,6 +130,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {
+			case key.Matches(msg, customKeys.Delete):
+				index := m.list.Index()
+				m.list.RemoveItem(index)
+				itemsToJson(recentlyUsedPath, m.list.Items(), true)
+				m.sortedItems = m.list.Items()
+				return m, nil
 			case key.Matches(msg, customKeys.Sort):
 				return m.unsort(msg)
 			}
@@ -199,11 +206,16 @@ func (m model) View() string {
 		customKeys.Cancel.SetEnabled(false)
 		customKeys.Input.SetEnabled(true)
 		customKeys.Sort.SetEnabled(true)
+		customKeys.Delete.SetEnabled(false)
 		m.list.KeyMap.CursorUp.SetEnabled(true)
 		m.list.KeyMap.CursorDown.SetEnabled(true)
 		m.list.KeyMap.Filter.SetEnabled(true)
 		m.list.KeyMap.Quit.SetEnabled(true)
 		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
+	}
+
+	if m.sorted {
+		customKeys.Delete.SetEnabled(true)
 	}
 
 	sections = append(sections, m.list.View())

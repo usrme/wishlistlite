@@ -7,6 +7,7 @@ type customKeyMap struct {
 	Connect key.Binding
 	Cancel  key.Binding
 	Sort    key.Binding
+	Delete  key.Binding
 }
 
 var customKeys = customKeyMap{
@@ -25,5 +26,9 @@ var customKeys = customKeyMap{
 	Sort: key.NewBinding(
 		key.WithKeys("r"),
 		key.WithHelp("r", "recently used"),
+	),
+	Delete: key.NewBinding(
+		key.WithKeys("d"),
+		key.WithHelp("d", "delete from recents"),
 	),
 }

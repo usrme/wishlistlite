@@ -40,6 +40,8 @@ It's also possible to press the letter `i`, which will allow you to supply a hos
 
 To sort by recently connected to hosts press the letter `r`, which will read the file `~/.ssh/recent.json`, which gets created with the same entries as presented in the default view. After connecting to various hosts that file will be sorted according to which host was connected to recently. Press `r` again to return to the default view.
 
+To delete entries from the recently connected view press the letter `d`, which will remove the selected host from the view and immediately save the changes to the `~/.ssh/recent.json` file.
+
 ### Caveats
 
 Hosts starting with an asterisk are excluded as those (in my use case) usually mean either a `ProxyJump` or a `User` declaration right after. The entire parsing is done with regular expressions, so there may be other edge cases with parsing, but I've tried to cover the most common cases with the included tests.
