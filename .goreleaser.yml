@@ -1,3 +1,22 @@
+builds:
+  - id: wishlistlite
+    main: .
+    binary: wishlistlite
+    ldflags:
+      # https://pkg.go.dev/cmd/link
+      #
+      # '-s': omit the symbol table and debug information
+      # '-w': omit the DWARF symbol table
+      - "-s -w"
+    flags:
+      # remove all file system paths from the resulting executable
+      - "-trimpath"
+    env:
+      # disable cross-compilation
+      - CGO_ENABLED=0
+    hooks:
+      post: upx --best "{{ .Path }}"
+
 changelog:
   sort: asc
   filters:
