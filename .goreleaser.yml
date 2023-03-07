@@ -2,6 +2,9 @@ builds:
   - id: wishlistlite
     main: .
     binary: wishlistlite
+    goos:
+      - darwin
+      - linux
     ldflags:
       # https://pkg.go.dev/cmd/link
       #
