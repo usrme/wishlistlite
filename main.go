@@ -35,7 +35,7 @@ func main() {
 	}
 	p := tea.NewProgram(newModel(items, sortedItems), tea.WithAltScreen())
 
-	m, err := p.StartReturningModel()
+	m, err := p.Run()
 	if err != nil {
 		fmt.Println("failed to execute: %w", err)
 		os.Exit(1)
