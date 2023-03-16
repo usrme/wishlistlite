@@ -1,8 +1,14 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"os/exec"
+	"time"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/stopwatch"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -40,16 +46,22 @@ func (i Item) Description() string {
 }
 func (i Item) FilterValue() string { return i.Host }
 
+type connection struct {
+	state string
+}
+
 type model struct {
 	list            list.Model
 	originalItems   []list.Item
 	sortedItems     []list.Item
 	choice          string
 	quitting        bool
+	connection      connection
 	connectInput    textinput.Model
 	sorted          bool
 	defaultDelegate list.ItemDelegate
 	connectDelegate list.ItemDelegate
+	stopwatch       stopwatch.Model
 }
 
 func newModel(items, sortedItems []list.Item) model {
@@ -96,6 +108,7 @@ func newModel(items, sortedItems []list.Item) model {
 	input.PromptStyle = inputPromptStyle
 	input.CursorStyle = inputCursorStyle
 
+	st := stopwatch.NewWithInterval(time.Millisecond)
 	return model{
 		list:            hostList,
 		connectInput:    input,
@@ -103,11 +116,27 @@ func newModel(items, sortedItems []list.Item) model {
 		sortedItems:     sortedItems,
 		defaultDelegate: defaultDelegate,
 		connectDelegate: connectDelegate,
+		stopwatch:       st,
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	return nil
+}
+
+var output = make(chan string)
+
+func runBackgroundProcess(choice string, output chan<- string) {
+	// extremely hack-y way to prepend 'choice' to 'sshControlParentOpts'
+	c := exec.Command(sshExecutableName, append([]string{choice}, sshControlParentOpts...)...)
+	stdout, _ := c.StdoutPipe()
+	c.Start()
+
+	scanner := bufio.NewScanner(stdout)
+	scanner.Split(bufio.ScanRunes)
+	for scanner.Scan() {
+		output <- string(scanner.Text())
+	}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -162,13 +191,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, customKeys.Connect):
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
+				m.connection.state = "Connecting"
 				m.choice = string(i.Host)
-				return m.recordConnection(i)
+				cmds = append(cmds, m.stopwatch.Init())
+				go runBackgroundProcess(m.choice, output)
 			}
 
 		case key.Matches(msg, customKeys.Sort):
 			return m.sort(msg)
 		}
+	}
+
+	select {
+	case <-output:
+		m.connection.state = "Connected"
+		return m.recordConnection(m.list.SelectedItem().(Item))
+	default:
+		m.stopwatch, cmd = m.stopwatch.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	m.list, cmd = m.list.Update(msg)
@@ -183,6 +223,12 @@ func (m model) View() string {
 		sections []string
 		style    lipgloss.Style
 	)
+
+	if m.connection.state == "Connecting" {
+		return fmt.Sprintf("\n\n  Connecting... %s\n\n", m.stopwatch.View())
+	} else if m.connection.state == "Connected" {
+		return style.Render(view)
+	}
 
 	m.list.NewStatusMessage(versionStyle(pkgVersion()))
 	m.list.Styles.HelpStyle.Padding(0, 0, 0, 2)

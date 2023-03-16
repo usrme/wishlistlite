@@ -9,16 +9,19 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// sshExecutable is the name of the SSH executable present on the local system.
-const sshExecutable = "ssh"
+// sshExecutableName is the name of the SSH executable present on the local system.
+const sshExecutableName = "ssh"
 
 var (
-	sshConfigPath    = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
-	recentlyUsedPath = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
+	sshConfigPath        = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
+	recentlyUsedPath     = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
+	sshControlPath       = "/dev/shm/control:%h:%p:%r"
+	sshControlChildOpts  = []string{"-S", sshControlPath}
+	sshControlParentOpts = []string{"-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
 )
 
 func main() {
-	execPath := verifyExecutable(sshExecutable)
+	sshExecutablePath := verifyExecutable(sshExecutableName)
 
 	items, err := sshConfigHosts(sshConfigPath)
 	if err != nil {
@@ -42,7 +45,7 @@ func main() {
 	}
 
 	if m, ok := m.(model); ok && m.choice != "" {
-		runExecutable(execPath, []string{sshExecutable, m.choice})
+		runExecutable(sshExecutablePath, append([]string{sshExecutableName, m.choice}, sshControlChildOpts...))
 	}
 }
 
