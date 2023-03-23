@@ -48,6 +48,8 @@ Hosts starting with an asterisk are excluded as those (in my use case) usually m
 
 Before starting the execution there is a verification that is made that the `ssh` executable exists and that any necessary SSH keys are already loaded into an SSH agent.
 
+The ability to show a stopwatch counting up to the moment a connection is made is achieved through the use of the ['ControlMaster'](https://www.mankier.com/5/ssh_config#ControlMaster), ['ControlPersist'](https://www.mankier.com/5/ssh_config#ControlPersist), and ['ControlPath'](https://www.mankier.com/5/ssh_config#ControlPath) SSH options. Here is some [more information on those options](https://usrme.xyz/tils/that-ssh-allows-for-connection-sharing/) and the [GitHub issue](https://github.com/usrme/wishlistlite/issues/8) behind implementing it. The caveat is in that a socket is being set up in `/dev/shm` that is privileged only to your own user.
+
 ## Acknowledgments
 
 Couldn't have been possible without the work of people in [Charm](https://github.com/charmbracelet).
