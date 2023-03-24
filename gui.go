@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os/exec"
 	"time"
 
@@ -124,18 +125,27 @@ func (m model) Init() tea.Cmd {
 	return nil
 }
 
-var output = make(chan string)
+var (
+	stdOutChan = make(chan string)
+	stdErrChan = make(chan string)
+)
 
-func runBackgroundProcess(choice string, output chan<- string) {
+func runBackgroundProcess(choice string, stdOutChan chan<- string, stdErrChan chan<- string) {
 	// extremely hack-y way to prepend 'choice' to 'sshControlParentOpts'
 	c := exec.Command(sshExecutableName, append([]string{choice}, sshControlParentOpts...)...)
 	stdout, _ := c.StdoutPipe()
+	stderr, _ := c.StderrPipe()
 	c.Start()
+
+	go func() {
+		slurp, _ := io.ReadAll(stderr)
+		stdErrChan <- fmt.Sprint(slurp)
+	}()
 
 	scanner := bufio.NewScanner(stdout)
 	scanner.Split(bufio.ScanRunes)
 	for scanner.Scan() {
-		output <- string(scanner.Text())
+		stdOutChan <- string(scanner.Text())
 	}
 }
 
@@ -194,7 +204,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.connection.state = "Connecting"
 				m.choice = string(i.Host)
 				cmds = append(cmds, m.stopwatch.Init())
-				go runBackgroundProcess(m.choice, output)
+				go runBackgroundProcess(m.choice, stdOutChan, stdErrChan)
 			}
 
 		case key.Matches(msg, customKeys.Sort):
@@ -203,9 +213,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	select {
-	case <-output:
+	case <-stdOutChan:
 		m.connection.state = "Connected"
 		return m.recordConnection(m.list.SelectedItem().(Item))
+	case <-stdErrChan:
+		return m, tea.Quit
 	default:
 		m.stopwatch, cmd = m.stopwatch.Update(msg)
 		cmds = append(cmds, cmd)
