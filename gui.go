@@ -138,9 +138,8 @@ var (
 	stdErrChan = make(chan string)
 )
 
-func runBackgroundProcess(choice string, stdOutChan chan<- string, stdErrChan chan<- string) {
-	// extremely hack-y way to prepend 'choice' to 'sshControlParentOpts'
-	c := exec.Command(sshExecutableName, append([]string{choice}, sshControlParentOpts...)...)
+func runBackgroundProcess(stdOutChan chan<- string, stdErrChan chan<- string, executableName string, arg ...string) {
+	c := exec.Command(executableName, arg...)
 	stdout, _ := c.StdoutPipe()
 	stderr, _ := c.StderrPipe()
 	c.Start()
@@ -213,7 +212,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.choice = string(i.Host)
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, m.stopwatch.Init())
-				go runBackgroundProcess(m.choice, stdOutChan, stdErrChan)
+				// extremely hack-y way to prepend 'm.choice' to 'sshControlParentOpts'
+				go runBackgroundProcess(stdOutChan, stdErrChan, sshExecutableName, append([]string{m.choice}, sshControlParentOpts...)...)
 			}
 
 		case key.Matches(msg, customKeys.Sort):
