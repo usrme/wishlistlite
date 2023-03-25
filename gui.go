@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/stopwatch"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,6 +30,7 @@ var (
 	filterCursorStyle = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow).Padding(0, 0, 0, 2)
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
+	spinnerStyle      = lipgloss.NewStyle().Foreground(nordAuroraGreen)
 	versionStyle      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).Render
 )
 
@@ -62,6 +64,7 @@ type model struct {
 	sorted          bool
 	defaultDelegate list.ItemDelegate
 	connectDelegate list.ItemDelegate
+	spinner         spinner.Model
 	stopwatch       stopwatch.Model
 }
 
@@ -109,6 +112,10 @@ func newModel(items, sortedItems []list.Item) model {
 	input.PromptStyle = inputPromptStyle
 	input.CursorStyle = inputCursorStyle
 
+	sp := spinner.New()
+	sp.Spinner = spinner.Pulse
+	sp.Style = spinnerStyle
+
 	st := stopwatch.NewWithInterval(time.Millisecond)
 	return model{
 		list:            hostList,
@@ -117,6 +124,7 @@ func newModel(items, sortedItems []list.Item) model {
 		sortedItems:     sortedItems,
 		defaultDelegate: defaultDelegate,
 		connectDelegate: connectDelegate,
+		spinner:         sp,
 		stopwatch:       st,
 	}
 }
@@ -203,6 +211,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				m.connection.state = "Connecting"
 				m.choice = string(i.Host)
+				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, m.stopwatch.Init())
 				go runBackgroundProcess(m.choice, stdOutChan, stdErrChan)
 			}
@@ -219,6 +228,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case <-stdErrChan:
 		return m, tea.Quit
 	default:
+		m.spinner, cmd = m.spinner.Update(msg)
+		cmds = append(cmds, cmd)
 		m.stopwatch, cmd = m.stopwatch.Update(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -237,7 +248,7 @@ func (m model) View() string {
 	)
 
 	if m.connection.state == "Connecting" {
-		return fmt.Sprintf("\n\n  Connecting... %s\n\n", m.stopwatch.View())
+		return fmt.Sprintf("\n\n   %s Connecting... %s\n\n", m.spinner.View(), m.stopwatch.View())
 	} else if m.connection.state == "Connected" {
 		return style.Render(view)
 	}
