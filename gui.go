@@ -50,7 +50,8 @@ func (i Item) Description() string {
 func (i Item) FilterValue() string { return i.Host }
 
 type connection struct {
-	state string
+	state       string
+	startupTime time.Duration
 }
 
 type model struct {
@@ -224,6 +225,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	select {
 	case <-stdOutChan:
 		m.connection.state = "Connected"
+		m.connection.startupTime = m.stopwatch.Elapsed()
 		return m.recordConnection(m.list.SelectedItem().(Item))
 	case <-stdErrChan:
 		return m, tea.Quit
