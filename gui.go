@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -50,8 +51,9 @@ func (i Item) Description() string {
 func (i Item) FilterValue() string { return i.Host }
 
 type connection struct {
-	state       string
+	output      string
 	startupTime time.Duration
+	state       string
 }
 
 type model struct {
@@ -150,11 +152,17 @@ func runBackgroundProcess(stdOutChan chan<- string, stdErrChan chan<- string, ex
 		stdErrChan <- fmt.Sprint(slurp)
 	}()
 
+	var output []string
 	scanner := bufio.NewScanner(stdout)
-	scanner.Split(bufio.ScanRunes)
+	scanner.Split(bufio.ScanLines)
+
+	output = append(output, scanner.Text())
 	for scanner.Scan() {
-		stdOutChan <- scanner.Text()
+		output = append(output, scanner.Text())
 	}
+
+	stdOutChan <- strings.Join(output, "\n")
+	close(stdOutChan)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -223,9 +231,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	select {
-	case <-stdOutChan:
-		m.connection.state = "Connected"
+	case out := <-stdOutChan:
+		m.connection.output = out
 		m.connection.startupTime = m.stopwatch.Elapsed()
+		m.connection.state = "Connected"
 		return m.recordConnection(m.list.SelectedItem().(Item))
 	case <-stdErrChan:
 		return m, tea.Quit
