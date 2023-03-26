@@ -228,12 +228,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case <-stdErrChan:
 		return m, tea.Quit
 	default:
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, cmd)
-		m.stopwatch, cmd = m.stopwatch.Update(msg)
-		cmds = append(cmds, cmd)
+		break
 	}
 
+	m.spinner, cmd = m.spinner.Update(msg)
+	cmds = append(cmds, cmd)
+	m.stopwatch, cmd = m.stopwatch.Update(msg)
+	cmds = append(cmds, cmd)
 	m.list, cmd = m.list.Update(msg)
 	cmds = append(cmds, cmd)
 
