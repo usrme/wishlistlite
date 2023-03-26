@@ -153,7 +153,7 @@ func runBackgroundProcess(stdOutChan chan<- string, stdErrChan chan<- string, ex
 	scanner := bufio.NewScanner(stdout)
 	scanner.Split(bufio.ScanRunes)
 	for scanner.Scan() {
-		stdOutChan <- string(scanner.Text())
+		stdOutChan <- scanner.Text()
 	}
 }
 
