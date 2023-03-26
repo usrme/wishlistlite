@@ -45,7 +45,7 @@ func main() {
 	}
 
 	if m, ok := m.(model); ok && m.choice != "" {
-		fmt.Printf("Connected in %v\n\n", m.connection.startupTime)
+		fmt.Printf("Connected in %v\n", m.connection.startupTime)
 		runExecutable(sshExecutablePath, append([]string{sshExecutableName, m.choice}, sshControlChildOpts...))
 	}
 }
