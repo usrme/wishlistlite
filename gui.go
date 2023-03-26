@@ -230,6 +230,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case <-stdErrChan:
 		return m, tea.Quit
 	default:
+		// 'select' with no 'default' will block until one of the channels yield something
+		// this would be detrimental in this case as the 'Update()' function should still
+		// continue to operate even if no channel has data
 		break
 	}
 
