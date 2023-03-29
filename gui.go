@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os/exec"
 	"strings"
 	"time"
@@ -56,6 +55,8 @@ type connection struct {
 	state       string
 }
 
+type connectionOutputMsg []string
+
 type model struct {
 	list            list.Model
 	originalItems   []list.Item
@@ -63,6 +64,7 @@ type model struct {
 	choice          string
 	quitting        bool
 	connection      connection
+	outputChan      chan []string
 	connectInput    textinput.Model
 	sorted          bool
 	defaultDelegate list.ItemDelegate
@@ -122,6 +124,7 @@ func newModel(items, sortedItems []list.Item) model {
 	st := stopwatch.NewWithInterval(time.Millisecond)
 	return model{
 		list:            hostList,
+		outputChan:      make(chan []string),
 		connectInput:    input,
 		originalItems:   items,
 		sortedItems:     sortedItems,
@@ -132,37 +135,33 @@ func newModel(items, sortedItems []list.Item) model {
 	}
 }
 
-func (m model) Init() tea.Cmd {
-	return nil
+func execCommand(o chan []string, name string, arg ...string) tea.Cmd {
+	return func() tea.Msg {
+		c := exec.Command(name, arg...)
+		stdout, _ := c.StdoutPipe()
+		c.Start()
+
+		scanner := bufio.NewScanner(stdout)
+		scanner.Split(bufio.ScanLines)
+
+		var out []string
+		out = append(out, scanner.Text())
+		for scanner.Scan() {
+			out = append(out, scanner.Text())
+		}
+		o <- connectionOutputMsg(out)
+		return nil
+	}
 }
 
-var (
-	stdOutChan = make(chan string)
-	stdErrChan = make(chan string)
-)
-
-func runBackgroundProcess(stdOutChan chan<- string, stdErrChan chan<- string, executableName string, arg ...string) {
-	c := exec.Command(executableName, arg...)
-	stdout, _ := c.StdoutPipe()
-	stderr, _ := c.StderrPipe()
-	c.Start()
-
-	go func() {
-		slurp, _ := io.ReadAll(stderr)
-		stdErrChan <- fmt.Sprint(slurp)
-	}()
-
-	var output []string
-	scanner := bufio.NewScanner(stdout)
-	scanner.Split(bufio.ScanLines)
-
-	output = append(output, scanner.Text())
-	for scanner.Scan() {
-		output = append(output, scanner.Text())
+func waitForCommand(o chan []string) tea.Cmd {
+	return func() tea.Msg {
+		return connectionOutputMsg(<-o)
 	}
+}
 
-	stdOutChan <- strings.Join(output, "\n")
-	close(stdOutChan)
+func (m model) Init() tea.Cmd {
+	return waitForCommand(m.outputChan)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -222,36 +221,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, m.stopwatch.Init())
 				// extremely hack-y way to prepend 'm.choice' to 'sshControlParentOpts'
-				go runBackgroundProcess(stdOutChan, stdErrChan, sshExecutableName, append([]string{m.choice}, sshControlParentOpts...)...)
+				cmds = append(cmds, execCommand(m.outputChan, sshExecutableName, append([]string{m.choice}, sshControlParentOpts...)...))
 			}
 
 		case key.Matches(msg, customKeys.Sort):
 			return m.sort(msg)
 		}
-	}
-
-	select {
-	case out := <-stdOutChan:
-		m.connection.output = out
+	case connectionOutputMsg:
+		m.connection.output = strings.Join(msg, "\n")
 		m.connection.startupTime = m.stopwatch.Elapsed()
 		m.connection.state = "Connected"
 		return m.recordConnection(m.list.SelectedItem().(Item))
-	case <-stdErrChan:
-		return m, tea.Quit
-	default:
-		// 'select' with no 'default' will block until one of the channels yield something
-		// this would be detrimental in this case as the 'Update()' function should still
-		// continue to operate even if no channel has data
-		break
+	case spinner.TickMsg:
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 	}
 
-	m.spinner, cmd = m.spinner.Update(msg)
-	cmds = append(cmds, cmd)
 	m.stopwatch, cmd = m.stopwatch.Update(msg)
 	cmds = append(cmds, cmd)
 	m.list, cmd = m.list.Update(msg)
 	cmds = append(cmds, cmd)
-
 	return m, tea.Batch(cmds...)
 }
 
