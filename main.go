@@ -17,7 +17,7 @@ var (
 	recentlyUsedPath     = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
 	sshControlPath       = "/dev/shm/control:%h:%p:%r"
 	sshControlChildOpts  = []string{"-S", sshControlPath}
-	sshControlParentOpts = []string{"-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
+	sshControlParentOpts = []string{"-T", "-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
 )
 
 func main() {
