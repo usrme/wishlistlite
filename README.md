@@ -50,6 +50,51 @@ Before starting the execution there is a verification that is made that the `ssh
 
 The ability to show a stopwatch counting up to the moment a connection is made is achieved through the use of the ['ControlMaster'](https://www.mankier.com/5/ssh_config#ControlMaster), ['ControlPersist'](https://www.mankier.com/5/ssh_config#ControlPersist), and ['ControlPath'](https://www.mankier.com/5/ssh_config#ControlPath) SSH options. Here is some [more information on those options](https://usrme.xyz/tils/that-ssh-allows-for-connection-sharing/) and the [GitHub issue](https://github.com/usrme/wishlistlite/issues/8) behind implementing it. The caveat is in that a socket is being set up in `/dev/shm` that is privileged only to your own user.
 
+Here is how the connection flow works by way of showing the system processes:
+
+* Just Wishlist Lite being open:
+
+```text
+systemd(1)───...───wishlistlite(85716)─┬─{wishlistlite}(85717)
+                                       ├─{wishlistlite}(85718)
+                                       ├─{wishlistlite}(85719)
+                                       ├─{wishlistlite}(85720)
+                                       ├─{wishlistlite}(85721)
+                                       ├─{wishlistlite}(85722)
+                                       ├─{wishlistlite}(85723)
+                                       ├─{wishlistlite}(85724)
+                                       └─{wishlistlite}(85725)
+```
+
+* Having initiated a connection, which brought up a parent SSH connection with [specific SSH options](https://github.com/usrme/wishlistlite/blob/146a247cb3fea212b900a8b296e978974a9fb454/main.go#L20):
+
+```text
+systemd(1)───...───wishlistlite(85716)─┬─ssh(85853)───ssh(85854)
+                                       ├─{wishlistlite}(85717)
+                                       ├─{wishlistlite}(85718)
+                                       ├─{wishlistlite}(85719)
+                                       ├─{wishlistlite}(85720)
+                                       ├─{wishlistlite}(85721)
+                                       ├─{wishlistlite}(85722)
+                                       ├─{wishlistlite}(85723)
+                                       ├─{wishlistlite}(85724)
+                                       ├─{wishlistlite}(85725)
+                                       ├─{wishlistlite}(85855)
+                                       ├─{wishlistlite}(85856)
+                                       ├─{wishlistlite}(85857)
+                                       └─{wishlistlite}(85858)
+```
+
+* Being finally connected to a host:
+
+```text
+systemd(1)───...───ssh(85716)───ssh(85853)
+```
+
+Note how the original process ID of Wishlist Lite (85716) is now that of the SSH process'. This is happening because of the call to `syscall.Exec` [here](https://github.com/usrme/wishlistlite/blob/146a247cb3fea212b900a8b296e978974a9fb454/main.go#L69), which in turn invokes the ['execve(2) system call'](https://www.mankier.com/2/execve), which:
+
+> causes the program that is currently being run by the calling process to be replaced with a new program, with newly initialized stack, heap, and (initialized and uninitialized) data segments.
+
 ## Acknowledgments
 
 Couldn't have been possible without the work of people in [Charm](https://github.com/charmbracelet).
