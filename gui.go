@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 	"time"
@@ -56,6 +57,7 @@ type connection struct {
 }
 
 type connectionOutputMsg []string
+type connectionErrorMsg []string
 
 type model struct {
 	list            list.Model
@@ -64,6 +66,8 @@ type model struct {
 	choice          string
 	quitting        bool
 	connection      connection
+	err             string
+	errorChan       chan []string
 	outputChan      chan []string
 	connectInput    textinput.Model
 	sorted          bool
@@ -124,6 +128,7 @@ func newModel(items, sortedItems []list.Item) model {
 	st := stopwatch.NewWithInterval(time.Millisecond)
 	return model{
 		list:            hostList,
+		errorChan:       make(chan []string),
 		outputChan:      make(chan []string),
 		connectInput:    input,
 		originalItems:   items,
@@ -135,11 +140,20 @@ func newModel(items, sortedItems []list.Item) model {
 	}
 }
 
-func execCommand(o chan []string, name string, arg ...string) tea.Cmd {
+func execCommand(outChan chan []string, errChan chan []string, name string, arg ...string) tea.Cmd {
 	return func() tea.Msg {
 		c := exec.Command(name, arg...)
 		stdout, _ := c.StdoutPipe()
+		stderr, _ := c.StderrPipe()
+
 		c.Start()
+
+		slurp, _ := io.ReadAll(stderr)
+		if len(slurp) > 0 {
+			slurp := strings.Split(string(slurp), "")
+			errChan <- connectionErrorMsg(slurp)
+			return tea.Quit
+		}
 
 		scanner := bufio.NewScanner(stdout)
 		scanner.Split(bufio.ScanLines)
@@ -149,19 +163,28 @@ func execCommand(o chan []string, name string, arg ...string) tea.Cmd {
 		for scanner.Scan() {
 			out = append(out, scanner.Text())
 		}
-		o <- connectionOutputMsg(out)
+		outChan <- connectionOutputMsg(out)
 		return nil
 	}
 }
 
-func waitForCommand(o chan []string) tea.Cmd {
+func waitForCommandError(c chan []string) tea.Cmd {
 	return func() tea.Msg {
-		return connectionOutputMsg(<-o)
+		return connectionErrorMsg(<-c)
+	}
+}
+
+func waitForCommandOutput(c chan []string) tea.Cmd {
+	return func() tea.Msg {
+		return connectionOutputMsg(<-c)
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return waitForCommand(m.outputChan)
+	return tea.Batch(
+		waitForCommandError(m.errorChan),
+		waitForCommandOutput(m.outputChan),
+	)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -221,12 +244,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, m.stopwatch.Init())
 				// extremely hack-y way to prepend 'm.choice' to 'sshControlParentOpts'
-				cmds = append(cmds, execCommand(m.outputChan, sshExecutableName, append([]string{m.choice}, sshControlParentOpts...)...))
+				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, sshExecutableName, append([]string{m.choice}, sshControlParentOpts...)...))
 			}
 
 		case key.Matches(msg, customKeys.Sort):
 			return m.sort(msg)
 		}
+	case connectionErrorMsg:
+		m.choice = ""
+		m.err = strings.Join(msg, "")
+		return m, tea.Quit
 	case connectionOutputMsg:
 		m.connection.output = strings.Join(msg, "\n")
 		m.connection.startupTime = m.stopwatch.Elapsed()

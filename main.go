@@ -48,6 +48,10 @@ func main() {
 		fmt.Printf("Connected in %v\n", m.connection.startupTime)
 		fmt.Println(m.connection.output)
 		runExecutable(sshExecutablePath, append([]string{sshExecutableName, m.choice}, sshControlChildOpts...))
+	} else if m.err != "" {
+		fmt.Printf("Unable to connect:\n\n")
+		fmt.Print(m.err)
+		os.Exit(1)
 	}
 }
 
