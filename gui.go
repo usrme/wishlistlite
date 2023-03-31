@@ -345,6 +345,7 @@ func (m model) unsort(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.sorted = false
 	customKeys.Sort.SetHelp("r", "recently used")
 	m.list.SetItems(m.originalItems)
+	m.list.ResetSelected()
 	return m, nil
 }
 
@@ -352,6 +353,7 @@ func (m model) sort(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.sorted = true
 	customKeys.Sort.SetHelp("r", "revert to default")
 	m.list.SetItems(m.sortedItems)
+	m.list.ResetSelected()
 	return m, nil
 }
 
