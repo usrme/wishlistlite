@@ -59,6 +59,24 @@ func TestSshConfigHosts(t *testing.T) {
 			}
 		}
 	})
+	t.Run("expected hosts 'includedTopLevel'", func(t *testing.T) {
+		var hosts []list.Item
+		expected := []list.Item{
+			Item{Host: "saturday", Hostname: "saturday.local"},
+			Item{Host: "sunday", Hostname: "sunday.local"},
+			Item{Host: "lodestar", Hostname: "lodestar.local"},
+		}
+		hosts, err := sshConfigHosts("testdata/includedTop")
+
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := range hosts {
+			if hosts[i] != expected[i] {
+				t.Errorf("got %s, wanted %d", hosts[i], expected[i])
+			}
+		}
+	})
 }
 
 func TestMoveToFront(t *testing.T) {

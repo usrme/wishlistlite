@@ -1,0 +1,4 @@
+Include testdata/included1
+
+Host lodestar
+	HostName lodestar.local

@@ -32,14 +32,35 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
+var allItems [][]list.Item
+
 func sshConfigHosts(filePath string) ([]list.Item, error) {
+	if filePath[0] == '~' {
+		filePath = fmt.Sprintf("%s/%s", userHomeDir(), filePath[1:])
+	}
+
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
 
+	var pat *regexp.Regexp
+
+	// grab all 'Include' keyword values
+	pat = regexp.MustCompile(`(?m)^Include\s([a-zA-Z0-9_\-\.\~\*\/]*)`)
+	includeMatches := pat.FindAllStringSubmatch(string(content), -1)
+
+	for _, i := range includeMatches {
+		j, err := sshConfigHosts(i[1])
+		if err == nil {
+			allItems = append(allItems, j)
+		} else {
+			continue
+		}
+	}
+
 	// grab all 'Host' ('Host' not included) and 'HostName' ('HostName' included)
-	pat := regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
+	pat = regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
 	mainMatches := pat.FindAllStringSubmatch(string(content), -1)
 
 	var items []list.Item
@@ -55,7 +76,21 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 			items = append(items, Item{Host: m[1], Hostname: m[1]})
 		}
 	}
+
+	if len(allItems) == len(includeMatches) && len(includeMatches) != 0 {
+		allItems = append(allItems, items)
+		return flatten(allItems), nil
+	}
+
 	return items, nil
+}
+
+func flatten[T any](lists [][]T) []T {
+	var res []T
+	for _, list := range lists {
+		res = append(res, list...)
+	}
+	return res
 }
 
 func itemsToJson(filePath string, l []list.Item, overwrite bool) error {

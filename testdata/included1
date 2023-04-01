@@ -1,0 +1,5 @@
+Host saturday
+	HostName saturday.local
+
+Host sunday
+	HostName sunday.local
