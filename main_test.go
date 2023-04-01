@@ -33,7 +33,7 @@ func TestSshConfigHosts(t *testing.T) {
 			}
 		})
 	}
-	t.Run("expected hosts", func(t *testing.T) {
+	t.Run("expected hosts 'good'", func(t *testing.T) {
 		expected := []list.Item{
 			Item{Host: "darkstar", Hostname: "darkstar.local"},
 			Item{Host: "supernova", Hostname: "supernova.local"},
