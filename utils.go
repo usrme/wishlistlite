@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"runtime/debug"
@@ -44,14 +45,36 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
 
-	var pat *regexp.Regexp
+	var (
+		pat          *regexp.Regexp
+		filePaths    []string
+		includeCount int
+	)
 
 	// grab all 'Include' keyword values
 	pat = regexp.MustCompile(`(?m)^Include\s([a-zA-Z0-9_\-\.\~\*\/]*)`)
 	includeMatches := pat.FindAllStringSubmatch(string(content), -1)
 
 	for _, i := range includeMatches {
-		j, err := sshConfigHosts(i[1])
+		// if an 'Include' value's (i[1]) last character (i[1][len(i[1])-1]) is a wildcard
+		if i[1][len(i[1])-1] == '*' {
+			// make sure its first character is or isn't a tilde, which needs to be expanded
+			if i[1][0] == '~' {
+				i[1] = fmt.Sprintf("%s/%s", userHomeDir(), i[1][1:])
+			}
+			matches, _ := filepath.Glob(i[1])
+			// add all the globbed matches
+			filePaths = append(filePaths, matches...)
+			includeCount += len(matches)
+		} else {
+			// add whatever was the 'Include' value
+			filePaths = append(filePaths, i[1])
+			includeCount += 1
+		}
+	}
+
+	for _, i := range filePaths {
+		j, err := sshConfigHosts(i)
 		if err == nil {
 			allItems = append(allItems, j)
 		} else {
@@ -77,7 +100,7 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		}
 	}
 
-	if len(allItems) == len(includeMatches) && len(includeMatches) != 0 {
+	if len(allItems) == includeCount && includeCount != 0 {
 		allItems = append(allItems, items)
 		return flatten(allItems), nil
 	}
