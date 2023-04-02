@@ -50,13 +50,39 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
 
+	filePaths, includeCount := findIncludedFiles(content)
+
+	for _, i := range filePaths {
+		j, err := sshConfigHosts(i)
+		if err == nil {
+			allItems = append(allItems, j)
+		} else {
+			continue
+		}
+	}
+
+	items := findHosts(content)
+
+	// this should only trigger when at the top level, thus
+	// causing a return of all found hosts from the main file
+	// and from any included files if there were any
+	if len(allItems) == includeCount && includeCount != 0 {
+		allItems = append(allItems, items)
+		return flatten(allItems), nil
+	}
+
+	// this should trigger when looking inside of an included
+	// file or when there were no included files
+	return items, nil
+}
+
+func findIncludedFiles(content []byte) ([]string, int) {
 	var (
 		pat          *regexp.Regexp
 		filePaths    []string
 		includeCount int
 	)
 
-	// grab all 'Include' keyword values
 	pat = regexp.MustCompile(`(?m)^Include\s([a-zA-Z0-9_\-\.\~\*\/]*)`)
 	includeMatches := pat.FindAllStringSubmatch(string(content), -1)
 
@@ -75,17 +101,12 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		}
 	}
 
-	for _, i := range filePaths {
-		j, err := sshConfigHosts(i)
-		if err == nil {
-			allItems = append(allItems, j)
-		} else {
-			continue
-		}
-	}
+	return filePaths, includeCount
+}
 
+func findHosts(content []byte) []list.Item {
 	// grab all 'Host' ('Host' not included) and 'HostName' ('HostName' included)
-	pat = regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
+	pat := regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
 	mainMatches := pat.FindAllStringSubmatch(string(content), -1)
 
 	var items []list.Item
@@ -102,12 +123,7 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		}
 	}
 
-	if len(allItems) == includeCount && includeCount != 0 {
-		allItems = append(allItems, items)
-		return flatten(allItems), nil
-	}
-
-	return items, nil
+	return items
 }
 
 func flatten[T any](lists [][]T) []T {
