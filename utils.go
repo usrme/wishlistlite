@@ -33,12 +33,17 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
+func expandTilde(filePath string) string {
+	if filePath[0] == '~' {
+		return fmt.Sprintf("%s/%s", userHomeDir(), filePath[1:])
+	}
+	return filePath
+}
+
 var allItems [][]list.Item
 
 func sshConfigHosts(filePath string) ([]list.Item, error) {
-	if filePath[0] == '~' {
-		filePath = fmt.Sprintf("%s/%s", userHomeDir(), filePath[1:])
-	}
+	filePath = expandTilde(filePath)
 
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -58,10 +63,7 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 	for _, i := range includeMatches {
 		// if an 'Include' value's (i[1]) last character (i[1][len(i[1])-1]) is a wildcard
 		if i[1][len(i[1])-1] == '*' {
-			// make sure its first character is or isn't a tilde, which needs to be expanded
-			if i[1][0] == '~' {
-				i[1] = fmt.Sprintf("%s/%s", userHomeDir(), i[1][1:])
-			}
+			i[1] = expandTilde(i[1])
 			matches, _ := filepath.Glob(i[1])
 			// add all the globbed matches
 			filePaths = append(filePaths, matches...)
