@@ -13,15 +13,20 @@ import (
 const sshExecutableName = "ssh"
 
 var (
-	sshConfigPath        = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/config")
-	recentlyUsedPath     = fmt.Sprintf("%s/%s", userHomeDir(), ".ssh/recent.json")
+	sshConfigPath        = expandTilde("~/.ssh/config")
+	recentlyUsedPath     = expandTilde("~/.ssh/recent.json")
 	sshControlPath       = "/dev/shm/control:%h:%p:%r"
 	sshControlChildOpts  = []string{"-S", sshControlPath}
 	sshControlParentOpts = []string{"-T", "-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
 )
 
 func main() {
-	sshExecutablePath := verifyExecutable(sshExecutableName)
+	sshExecutablePath, err := exec.LookPath(sshExecutableName)
+	// Using 'panic()' as it's supposedly acceptable during initialization phases:
+	// https://go.dev/doc/effective_go#panic
+	if err != nil {
+		panic(err)
+	}
 
 	items, err := sshConfigHosts(sshConfigPath)
 	if err != nil {
@@ -47,28 +52,15 @@ func main() {
 	if m, ok := m.(model); ok && m.choice != "" {
 		fmt.Printf("Connected in %v\n", m.connection.startupTime)
 		fmt.Println(m.connection.output)
-		runExecutable(sshExecutablePath, append([]string{sshExecutableName, m.choice}, sshControlChildOpts...))
+
+		args := append([]string{sshExecutableName, m.choice}, sshControlChildOpts...)
+		err := syscall.Exec(sshExecutablePath, args, os.Environ())
+		if err != nil {
+			fmt.Println("unable to run executable: %w", err)
+			os.Exit(1)
+		}
 	} else if m.err != "" {
-		fmt.Printf("Unable to connect:\n\n")
-		fmt.Print(m.err)
+		fmt.Println("unable to connect: %w", m.err)
 		os.Exit(1)
 	}
-}
-
-func verifyExecutable(execName string) string {
-	path, err := exec.LookPath(execName)
-	// using 'panic()' as it's supposedly acceptable during initialization phases
-	// https://go.dev/doc/effective_go#panic
-	if err != nil {
-		panic(err)
-	}
-	return path
-}
-
-func runExecutable(execPath string, args []string) error {
-	err := syscall.Exec(execPath, args, os.Environ())
-	if err != nil {
-		return fmt.Errorf("unable to run executable '%s' with args '%v': %w", execPath, args, err)
-	}
-	return nil
 }
