@@ -35,13 +35,20 @@ var (
 	versionStyle      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).Render
 )
 
+// An Item is an item that appears in the list.
 type Item struct {
 	Host      string
 	Hostname  string
 	Timestamp string
 }
 
+// Title returns the Host field for an Item as that is the
+// value that will be the primary for basing the selection.
 func (i Item) Title() string { return i.Host }
+
+// Description returns the Timestamp field for an Item if
+// it is present (i.e. when in the Recently Used view),
+// otherwise just the Hostname field.
 func (i Item) Description() string {
 	if i.Timestamp != "" {
 		return i.Timestamp

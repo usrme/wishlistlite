@@ -15,6 +15,10 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 )
 
+// userHomeDir returns a string literal representing a path to the user's home
+// directory who is executing the program.
+//
+// The returned value depends on the operating system.
 func userHomeDir() string {
 	switch runtime.GOOS {
 	case "windows":
@@ -42,6 +46,15 @@ func expandTilde(filePath string) string {
 
 var allItems [][]list.Item
 
+// sshConfigHosts returns a slice of 'list.Item' containing hosts from an SSH
+// configuration as type 'Item' and 'error'.
+//
+// It reads a file expected to be a valid SSH configuration file and uses
+// regular expressions to grab 'Include', 'Host', and 'Hostname' values where
+// possible. Possible meaning that it looks for sections of 'Host' that have a
+// 'HostName' field beneath it. Anything other than 'HostName' beneath it is
+// disregarded as they (most likely) include fields like 'User', 'ProxyJump', etc. that
+// have no bearing on listing valid hosts.
 func sshConfigHosts(filePath string) ([]list.Item, error) {
 	filePath = expandTilde(filePath)
 
@@ -134,6 +147,11 @@ func flatten[T any](lists [][]T) []T {
 	return res
 }
 
+// itemsToJson writes to filePath a slice of 'list.Item' as JSON and returns
+// 'error' if something went wrong.
+//
+// File is only written to when it doesn't already exist or when an explicit
+// overwrite was requested by the caller.
 func itemsToJson(filePath string, l []list.Item, overwrite bool) error {
 	result, err := json.Marshal(l)
 	if err != nil {
