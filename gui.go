@@ -55,8 +55,13 @@ func (i Item) Description() string {
 	}
 	return i.Hostname
 }
+
+// FilterValue returns the value that is used when
+// filtering the list.
 func (i Item) FilterValue() string { return i.Host }
 
+// A connection stores information about a successful
+// connection that was made against a chosen host.
 type connection struct {
 	output      string
 	startupTime time.Duration
