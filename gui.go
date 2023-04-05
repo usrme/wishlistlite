@@ -68,7 +68,12 @@ type connection struct {
 	state       string
 }
 
+// A connectionOutputMsg indicates that something has
+// been written to the standard output of a connection.
 type connectionOutputMsg []string
+
+// A connectionErrorMsg indicates that something has
+// been written to the standard error of a connection.
 type connectionErrorMsg []string
 
 type model struct {
@@ -180,12 +185,16 @@ func execCommand(outChan chan []string, errChan chan []string, name string, arg 
 	}
 }
 
+// waitForCommandError returns a tea.Cmd that waits for
+// standard error activity on a channel.
 func waitForCommandError(c chan []string) tea.Cmd {
 	return func() tea.Msg {
 		return connectionErrorMsg(<-c)
 	}
 }
 
+// waitForCommandOutput returns a tea.Cmd that waits for
+// standard output activity on a channel.
 func waitForCommandOutput(c chan []string) tea.Cmd {
 	return func() tea.Msg {
 		return connectionOutputMsg(<-c)
