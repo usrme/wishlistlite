@@ -76,7 +76,7 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 
 	items := findHosts(content)
 
-	// this should only trigger when at the top level, thus
+	// This should only trigger when at the top level, thus
 	// causing a return of all found hosts from the main file
 	// and from any included files if there were any
 	if len(allItems) == includeCount && includeCount != 0 {
@@ -84,7 +84,7 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		return flatten(allItems), nil
 	}
 
-	// this should trigger when looking inside of an included
+	// This should trigger when looking inside of an included
 	// file or when there were no included files
 	return items, nil
 }
@@ -100,15 +100,15 @@ func findIncludedFiles(content []byte) ([]string, int) {
 	includeMatches := pat.FindAllStringSubmatch(string(content), -1)
 
 	for _, i := range includeMatches {
-		// if an 'Include' value's (i[1]) last character (i[1][len(i[1])-1]) is a wildcard
+		// If an 'Include' value's (i[1]) last character (i[1][len(i[1])-1]) is a wildcard
 		if i[1][len(i[1])-1] == '*' {
 			i[1] = expandTilde(i[1])
 			matches, _ := filepath.Glob(i[1])
-			// add all the globbed matches
+			// Add all the globbed matches
 			filePaths = append(filePaths, matches...)
 			includeCount += len(matches)
 		} else {
-			// add whatever was the 'Include' value
+			// Add whatever was the 'Include' value
 			filePaths = append(filePaths, i[1])
 			includeCount += 1
 		}
@@ -118,15 +118,15 @@ func findIncludedFiles(content []byte) ([]string, int) {
 }
 
 func findHosts(content []byte) []list.Item {
-	// grab all 'Host' ('Host' not included) and 'HostName' ('HostName' included)
+	// Grab all 'Host' ('Host' not included) and 'HostName' ('HostName' included)
 	pat := regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
 	mainMatches := pat.FindAllStringSubmatch(string(content), -1)
 
 	var items []list.Item
 	for _, m := range mainMatches {
-		// if 'HostName' was present
+		// If 'HostName' was present
 		if m[2] != "" {
-			// make sure 'HostName' was defined correctly (i.e. followed by a space)
+			// Make sure 'HostName' was defined correctly (i.e. followed by a space)
 			pat := regexp.MustCompile(`HostName\s(.*)`)
 			for _, n := range pat.FindAllStringSubmatch(m[2], -1) {
 				items = append(items, Item{Host: m[1], Hostname: n[1]})
@@ -186,9 +186,9 @@ func itemsFromJson(filePath string) ([]list.Item, error) {
 }
 
 func itemToFront(sorted []list.Item, i Item) []list.Item {
-	var sortedHostSlice []string         // slice for sorting
-	hostMapBool := make(map[string]bool) // map for checking whether element already exists
-	hostMap := make(map[string]Item)     // map for quickly getting attributes of a single item
+	var sortedHostSlice []string         // Slice for sorting
+	hostMapBool := make(map[string]bool) // Map for checking whether element already exists
+	hostMap := make(map[string]Item)     // Map for quickly getting attributes of a single item
 
 	for _, host := range sorted {
 		hostShort := host.(Item).Host
@@ -196,7 +196,7 @@ func itemToFront(sorted []list.Item, i Item) []list.Item {
 		hostMap[hostShort] = host.(Item)
 	}
 
-	// if in ad hoc connections the input host is an already known host,
+	// If in ad hoc connections the input host is an already known host,
 	// then rewrite the incoming Item's fields to match existing host's
 	if _, ok := hostMapBool[i.Host]; ok {
 		existing := hostMap[i.Host]

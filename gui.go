@@ -95,7 +95,7 @@ type model struct {
 }
 
 func newModel(items, sortedItems []list.Item) model {
-	// set up default delegate for styling
+	// Set up default delegate for styling
 	defaultDelegate := list.NewDefaultDelegate()
 	defaultDelegate.Styles.SelectedTitle = defaultDelegate.Styles.SelectedTitle.
 		Foreground(nordAuroraGreen).
@@ -104,21 +104,21 @@ func newModel(items, sortedItems []list.Item) model {
 		Foreground(dimNordAuroraGreen).
 		BorderLeftForeground(nordAuroraGreen)
 
-	// create separate delegate for when active input is present
+	// Create separate delegate for when active input is present
 	connectDelegate := defaultDelegate
 	connectDelegate.Styles.SelectedTitle = connectDelegate.Styles.DimmedTitle
 	connectDelegate.Styles.SelectedDesc = connectDelegate.Styles.DimmedDesc
 	connectDelegate.Styles.NormalTitle = connectDelegate.Styles.DimmedTitle
 	connectDelegate.Styles.NormalDesc = connectDelegate.Styles.DimmedDesc
 
-	// set up main list
+	// Set up main list
 	hostList := list.New(items, defaultDelegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
 	hostList.FilterInput.PromptStyle = filterPromptStyle
 	hostList.FilterInput.CursorStyle = filterCursorStyle
 
-	// make sure custom keys have help text available
+	// Make sure custom keys have help text available
 	hostList.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{customKeys.Input, customKeys.Connect, customKeys.Cancel, customKeys.Sort, customKeys.Delete}
 	}
@@ -132,7 +132,7 @@ func newModel(items, sortedItems []list.Item) model {
 		}
 	}
 
-	// set up input prompt for custom connection
+	// Set up input prompt for custom connection
 	input := textinput.New()
 	input.Prompt = "Connect to: "
 	input.PromptStyle = inputPromptStyle
@@ -247,7 +247,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
-		// don't match any of the keys below if we're actively filtering
+		// Don't match any of the keys below if we're actively filtering
 		if m.list.FilterState() == list.Filtering {
 			break
 		}
@@ -264,7 +264,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.choice = string(i.Host)
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, m.stopwatch.Init())
-				// extremely hack-y way to prepend 'm.choice' to 'sshControlParentOpts'
+				// Extremely hack-y way to prepend 'm.choice' to 'sshControlParentOpts'
 				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, sshExecutableName, append([]string{m.choice}, sshControlParentOpts...)...))
 			}
 
