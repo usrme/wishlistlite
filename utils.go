@@ -37,6 +37,9 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
+// expandTilde returns given 'filePath' with the leading
+// tilde character expanded to the current user's home
+// directory, if a tilde was actually present.
 func expandTilde(filePath string) string {
 	if filePath[0] == '~' {
 		return fmt.Sprintf("%s/%s", userHomeDir(), filePath[1:])
@@ -44,6 +47,9 @@ func expandTilde(filePath string) string {
 	return filePath
 }
 
+// allItems represents a multi-dimensional slice of 'list.Item'.
+// Each additional slice within the outer slice represents a
+// slice of 'list.Item' from an 'Include' in 'sshConfigHosts'.
 var allItems [][]list.Item
 
 // sshConfigHosts returns a slice of 'list.Item' containing hosts from an SSH
@@ -89,6 +95,12 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 	return items, nil
 }
 
+// findIncludedFiles returns a slice of strings, each being
+// a file name that was found next to an 'Include' option in
+// the given 'content' slice of bytes, and the total count
+// of 'Include' options where in the case of a wildcard
+// include the count is increased by however many filenames
+// are returned by '[filepath.Glob]'.
 func findIncludedFiles(content []byte) ([]string, int) {
 	var (
 		pat          *regexp.Regexp
@@ -117,6 +129,9 @@ func findIncludedFiles(content []byte) ([]string, int) {
 	return filePaths, includeCount
 }
 
+// findHosts returns a slice of 'list.Item' from each
+// value found next to a 'Host' option in the given
+// 'content' slice of bytes.
 func findHosts(content []byte) []list.Item {
 	// Grab all 'Host' ('Host' not included) and 'HostName' ('HostName' included)
 	pat := regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
@@ -139,6 +154,7 @@ func findHosts(content []byte) []list.Item {
 	return items
 }
 
+// flatten returns a flattened slice from a multi-dimensional slice.
 func flatten[T any](lists [][]T) []T {
 	var res []T
 	for _, list := range lists {
@@ -164,6 +180,7 @@ func itemsToJson(filePath string, l []list.Item, overwrite bool) error {
 	return nil
 }
 
+// itemsFromJson returns a slice of 'list.Item' for each valid 'Item'.
 func itemsFromJson(filePath string) ([]list.Item, error) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -185,6 +202,8 @@ func itemsFromJson(filePath string) ([]list.Item, error) {
 	return items, nil
 }
 
+// itemToFront returns a slice of 'list.Item' where the given
+// item 'i' is moved to the front of the slice.
 func itemToFront(sorted []list.Item, i Item) []list.Item {
 	var sortedHostSlice []string         // Slice for sorting
 	hostMapBool := make(map[string]bool) // Map for checking whether element already exists
@@ -226,6 +245,8 @@ func itemToFront(sorted []list.Item, i Item) []list.Item {
 	return items
 }
 
+// moveToFront moves needle to the front of haystack, in place if possible.
+//
 // https://github.com/golang/go/wiki/SliceTricks#move-to-front-or-prepend-if-not-present-in-place-if-possible
 func moveToFront(needle string, haystack []string) []string {
 	if len(haystack) != 0 && haystack[0] == needle {
@@ -248,6 +269,9 @@ func moveToFront(needle string, haystack []string) []string {
 	return append(haystack, prev)
 }
 
+// timestampFirstItem returns a slice of 'list.Item' where the
+// first item is timestamped for the purposes of recording the
+// time when item was successfully chosen.
 func timestampFirstItem(l []list.Item) []list.Item {
 	// This seemed to be the easiest way to directly modify
 	// the first element in an already sorted slice
@@ -259,6 +283,12 @@ func timestampFirstItem(l []list.Item) []list.Item {
 	return l
 }
 
+// pkgVersion returns string 'unknown' or the build version
+// of the package.
+//
+// Will be '(devel)' when building locally and the actual
+// version when using an automatically built binary through
+// something like GoReleaser.
 func pkgVersion() string {
 	version := "unknown"
 	if info, ok := debug.ReadBuildInfo(); ok {

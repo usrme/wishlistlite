@@ -157,6 +157,9 @@ func newModel(items, sortedItems []list.Item) model {
 	}
 }
 
+// execCommand returns a command that runs 'name' command with
+// 'arg...' in the background when called writing to channels
+// 'outChan' and 'errChan' depending on the scenario.
 func execCommand(outChan chan []string, errChan chan []string, name string, arg ...string) tea.Cmd {
 	return func() tea.Msg {
 		c := exec.Command(name, arg...)
@@ -201,6 +204,11 @@ func waitForCommandOutput(c chan []string) tea.Cmd {
 	}
 }
 
+// Init initializes the model by returning commands through
+// tea.Batch. In this case it sets up the model in a way
+// that there are two commands - one for standard error and
+// one for standard output - that will immediately be
+// waited upon.
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
 		waitForCommandError(m.errorChan),
@@ -208,6 +216,7 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
+// Update returns the updated model and an optional command.
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
@@ -220,6 +229,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 
+	// When the custom connection input is focused
+	// adjust the model accordingly
 	if m.connectInput.Focused() {
 		return m.updateCustomInput(msg)
 	}
@@ -228,6 +239,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {
+			// When the delete key was pressed remove the item
+			// from both the list of items and from the file
 			case key.Matches(msg, customKeys.Delete):
 				index := m.list.Index()
 				m.list.RemoveItem(index)
@@ -252,6 +265,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 		switch {
+		// When the key for initiating a custom connection was pressed,
+		// focus the input, change the styling through a different
+		// delegate and start blinking the input cursor
 		case key.Matches(msg, customKeys.Input):
 			m.connectInput.Focus()
 			m.list.SetDelegate(m.connectDelegate)
@@ -271,10 +287,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, customKeys.Sort):
 			return m.sort(msg)
 		}
+	// When something was received as 'connectionErrorMsg'
+	// clear the choice from the model as the logic in
+	// 'main.go' checks it to be present
 	case connectionErrorMsg:
 		m.choice = ""
 		m.err = strings.Join(msg, "")
 		return m, tea.Quit
+	// When something was received as 'connectionOutputMsg'
+	// store what was received and stop all processing
 	case connectionOutputMsg:
 		m.connection.output = strings.Join(msg, "\n")
 		m.connection.startupTime = m.stopwatch.Elapsed()
@@ -344,6 +365,8 @@ func (m model) View() string {
 	return style.Render(view)
 }
 
+// updateCustomInput updates the model's state based on a
+// different set of keypresses.
 func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -362,6 +385,7 @@ func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// unsort updates the model's state to the original list of items.
 func (m model) unsort(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.sorted = false
 	customKeys.Sort.SetHelp("r", "recently used")
@@ -370,6 +394,8 @@ func (m model) unsort(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// sort updates the model's state to the sorted list of items.
+// The sorted list is based off of what was stored on disk.
 func (m model) sort(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.sorted = true
 	customKeys.Sort.SetHelp("r", "revert to default")
@@ -378,6 +404,9 @@ func (m model) sort(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// recordConnection adjusts the sorted list of items to bring
+// to the front the most recently chosen item and writes the
+// result to disk.
 func (m model) recordConnection(i Item) (tea.Model, tea.Cmd) {
 	items := timestampFirstItem(itemToFront(m.sortedItems, i))
 	itemsToJson(recentlyUsedPath, items, true)
