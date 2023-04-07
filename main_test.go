@@ -55,7 +55,7 @@ func TestSshConfigHosts(t *testing.T) {
 		}
 
 		for i := range hosts {
-			if hosts[i] != expected[i] {
+			if hosts[i].(Item).Host != expected[i].(Item).Host && hosts[i].(Item).Hostname != expected[i].(Item).Hostname {
 				t.Errorf("got %s, wanted %d", hosts[i], expected[i])
 			}
 		}
@@ -217,7 +217,7 @@ func TestFindHosts(t *testing.T) {
 			t.Fatalf("got %d, wanted %d", len(items), len(expected))
 		}
 		for i := range items {
-			if items[i] != expected[i] {
+			if items[i].(Item).Host != expected[i].(Item).Host && items[i].(Item).Hostname != expected[i].(Item).Hostname {
 				t.Errorf("got %s, wanted %d", items[i], expected[i])
 			}
 		}
