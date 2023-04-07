@@ -1,0 +1,12 @@
+Host saturday1
+	HostName saturday1.local
+
+Host saturday1
+	HostName saturday.local
+
+Host saturday2
+	HostName saturday.local
+	Port 2223
+
+Host sunday
+	HostName sunday.local

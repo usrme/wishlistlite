@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -193,6 +194,31 @@ func TestItemsFromJson(t *testing.T) {
 		for i := range sorted {
 			if sorted[i] != expected[i] {
 				t.Errorf("got %s, wanted %d", sorted[i], expected[i])
+			}
+		}
+	})
+}
+
+func TestFindHosts(t *testing.T) {
+	t.Run("no duplicates", func(t *testing.T) {
+		filePath := "testdata/duplicate"
+		filePath = expandTilde(filePath)
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := []list.Item{
+			Item{Host: "saturday1", Hostname: "saturday1.local"},
+			Item{Host: "saturday2", Hostname: "saturday.local"},
+			Item{Host: "sunday", Hostname: "sunday.local"},
+		}
+		items := findHosts(content)
+		if len(items) != len(expected) {
+			t.Fatalf("got %d, wanted %d", len(items), len(expected))
+		}
+		for i := range items {
+			if items[i] != expected[i] {
+				t.Errorf("got %s, wanted %d", items[i], expected[i])
 			}
 		}
 	})
