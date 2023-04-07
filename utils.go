@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -132,8 +133,11 @@ func findIncludedFiles(content []byte) ([]string, int) {
 // value found next to a 'Host' option in the given
 // 'content' slice of bytes.
 func findHosts(content []byte) []list.Item {
-	// Grab all 'Host' ('Host' not included) and 'HostName' ('HostName' included)
-	pat := regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)[\r\n](\s+HostName.*)?`)
+	// Grab all 'Host' ('Host' not included), 'HostName' ('HostName' included),
+	// and whatever was right after 'HostName' if anything. That 'whatever' will
+	// be used as something that differentiates between two identical 'HostName'
+	// values.
+	pat := regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)(\s+HostName[^\r\n][a-zA-Z0-9_\.-]+)?([\r\n][^\r\n].*)?`)
 	mainMatches := pat.FindAllStringSubmatch(string(content), -1)
 
 	// Map for checking whether host already exists
@@ -152,7 +156,8 @@ func findHosts(content []byte) []list.Item {
 			// Make sure 'HostName' was defined correctly (i.e. followed by a space)
 			pat := regexp.MustCompile(`HostName\s(.*)`)
 			for _, n := range pat.FindAllStringSubmatch(m[2], -1) {
-				items = append(items, Item{Host: m[1], Hostname: n[1]})
+				// 'm[3]' represents anything additional after 'HostName' limited to one line
+				items = append(items, Item{Host: m[1], Hostname: n[1], Extra: strings.TrimSpace(m[3])})
 			}
 		} else {
 			items = append(items, Item{Host: m[1], Hostname: m[1]})

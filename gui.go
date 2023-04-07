@@ -40,6 +40,7 @@ type Item struct {
 	Host      string
 	Hostname  string
 	Timestamp string
+	Extra     string
 }
 
 // Title returns the Host field for an Item as that is the
@@ -52,6 +53,9 @@ func (i Item) Title() string { return i.Host }
 func (i Item) Description() string {
 	if i.Timestamp != "" {
 		return i.Timestamp
+	}
+	if i.Extra != "" {
+		return fmt.Sprintf("%s :: %s", i.Hostname, i.Extra)
 	}
 	return i.Hostname
 }
