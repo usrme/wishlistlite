@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -64,7 +63,7 @@ var allItems [][]list.Item
 func sshConfigHosts(filePath string) ([]list.Item, error) {
 	filePath = expandTilde(filePath)
 
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
@@ -175,14 +174,14 @@ func itemsToJson(filePath string, l []list.Item, overwrite bool) error {
 	}
 	// Only write file if it doesn't already exist or an explicit overwrite was requested
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) || overwrite {
-		ioutil.WriteFile(filePath, result, 0644)
+		os.WriteFile(filePath, result, 0644)
 	}
 	return nil
 }
 
 // itemsFromJson returns a slice of 'list.Item' for each valid 'Item'.
 func itemsFromJson(filePath string) ([]list.Item, error) {
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
