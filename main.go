@@ -69,7 +69,7 @@ func main() {
 			os.Exit(1)
 		}
 	} else if m.err != "" {
-		fmt.Println("unable to connect: %w", m.err)
+		fmt.Printf("unable to connect: %s", m.err)
 		os.Exit(1)
 	}
 }
