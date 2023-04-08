@@ -3,9 +3,16 @@
 [![test](https://github.com/usrme/wishlistlite/actions/workflows/test.yml/badge.svg)](https://github.com/usrme/wishlistlite/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/usrme/wishlistlite)](https://goreportcard.com/report/github.com/usrme/wishlistlite)
 
-The lesser SSH directory ✨
+The lesser SSH directory (though maybe not so much anymore) ✨
 
 I made this a little while after discovering the canonical [Wishlist](https://github.com/charmbracelet/wishlist), but after not getting it to work properly (it wasn't able to connect to any of my defined hosts) I still felt the need for a tool of this sort. This luckily coincided with the time I started learning about Go and after a bit of faffing about I got something to work!
+
+## Features
+
+- Ping individual hosts on demand
+- Measure time it takes to connect to a host
+- Store when and what was connected to with a local file
+- Connect to a host interactively
 
 ## Installation
 
