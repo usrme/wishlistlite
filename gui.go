@@ -121,7 +121,7 @@ func newModel(items, sortedItems []list.Item, path string) model {
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
 	hostList.FilterInput.PromptStyle = filterPromptStyle
-	hostList.FilterInput.CursorStyle = filterCursorStyle
+	hostList.FilterInput.Cursor.Style = filterCursorStyle
 
 	// Make sure custom keys have help text available
 	hostList.AdditionalShortHelpKeys = func() []key.Binding {
@@ -141,7 +141,7 @@ func newModel(items, sortedItems []list.Item, path string) model {
 	input := textinput.New()
 	input.Prompt = "Connect to: "
 	input.PromptStyle = inputPromptStyle
-	input.CursorStyle = inputCursorStyle
+	input.Cursor.Style = inputCursorStyle
 
 	sp := spinner.New()
 	sp.Spinner = spinner.Pulse
