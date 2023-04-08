@@ -81,24 +81,25 @@ type connectionOutputMsg []string
 type connectionErrorMsg []string
 
 type model struct {
-	list            list.Model
-	originalItems   []list.Item
-	sortedItems     []list.Item
-	choice          string
-	quitting        bool
-	connection      connection
-	err             string
-	errorChan       chan []string
-	outputChan      chan []string
-	connectInput    textinput.Model
-	sorted          bool
-	defaultDelegate list.ItemDelegate
-	connectDelegate list.ItemDelegate
-	spinner         spinner.Model
-	stopwatch       stopwatch.Model
+	list             list.Model
+	originalItems    []list.Item
+	sortedItems      []list.Item
+	choice           string
+	quitting         bool
+	connection       connection
+	err              string
+	errorChan        chan []string
+	outputChan       chan []string
+	connectInput     textinput.Model
+	sorted           bool
+	defaultDelegate  list.ItemDelegate
+	connectDelegate  list.ItemDelegate
+	spinner          spinner.Model
+	stopwatch        stopwatch.Model
+	recentlyUsedPath string
 }
 
-func newModel(items, sortedItems []list.Item) model {
+func newModel(items, sortedItems []list.Item, path string) model {
 	// Set up default delegate for styling
 	defaultDelegate := list.NewDefaultDelegate()
 	defaultDelegate.Styles.SelectedTitle = defaultDelegate.Styles.SelectedTitle.
@@ -148,16 +149,17 @@ func newModel(items, sortedItems []list.Item) model {
 
 	st := stopwatch.NewWithInterval(time.Millisecond)
 	return model{
-		list:            hostList,
-		errorChan:       make(chan []string),
-		outputChan:      make(chan []string),
-		connectInput:    input,
-		originalItems:   items,
-		sortedItems:     sortedItems,
-		defaultDelegate: defaultDelegate,
-		connectDelegate: connectDelegate,
-		spinner:         sp,
-		stopwatch:       st,
+		list:             hostList,
+		errorChan:        make(chan []string),
+		outputChan:       make(chan []string),
+		connectInput:     input,
+		originalItems:    items,
+		sortedItems:      sortedItems,
+		defaultDelegate:  defaultDelegate,
+		connectDelegate:  connectDelegate,
+		spinner:          sp,
+		stopwatch:        st,
+		recentlyUsedPath: path,
 	}
 }
 
@@ -248,7 +250,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, customKeys.Delete):
 				index := m.list.Index()
 				m.list.RemoveItem(index)
-				itemsToJson(recentlyUsedPath, m.list.Items(), true)
+				itemsToJson(m.recentlyUsedPath, m.list.Items(), true)
 				m.sortedItems = m.list.Items()
 				return m, nil
 			case key.Matches(msg, customKeys.Sort):
@@ -413,6 +415,6 @@ func (m model) sort(msg tea.Msg) (tea.Model, tea.Cmd) {
 // result to disk.
 func (m model) recordConnection(i Item) (tea.Model, tea.Cmd) {
 	items := timestampFirstItem(itemToFront(m.sortedItems, i))
-	itemsToJson(recentlyUsedPath, items, true)
+	itemsToJson(m.recentlyUsedPath, items, true)
 	return m, tea.Quit
 }

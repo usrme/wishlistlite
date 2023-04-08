@@ -9,6 +9,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,14 +23,18 @@ const sshExecutableName = "ssh"
 
 // Paths and SSH control options used by package.
 var (
-	sshConfigPath        = expandTilde("~/.ssh/config")
-	recentlyUsedPath     = expandTilde("~/.ssh/recent.json")
-	sshControlPath       = "/dev/shm/control:%h:%p:%r"
-	sshControlChildOpts  = []string{"-S", sshControlPath}
-	sshControlParentOpts = []string{"-T", "-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
+	defaultSshConfigPath    = expandTilde("~/.ssh/config")
+	defaultRecentlyUsedPath = expandTilde("~/.ssh/recent.json")
+	sshControlPath          = "/dev/shm/control:%h:%p:%r"
+	sshControlChildOpts     = []string{"-S", sshControlPath}
+	sshControlParentOpts    = []string{"-T", "-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
 )
 
 func main() {
+	sshConfigPath := flag.String("sshconfigpath", defaultSshConfigPath, "Path to SSH configuration file")
+	recentlyUsedPath := flag.String("recentlyusedpath", defaultRecentlyUsedPath, "Path to recent SSH connections file")
+	flag.Parse()
+
 	sshExecutablePath, err := exec.LookPath(sshExecutableName)
 	// Using 'panic()' as it's supposedly acceptable during initialization phases:
 	// https://go.dev/doc/effective_go#panic
@@ -37,20 +42,20 @@ func main() {
 		panic(err)
 	}
 
-	items, err := sshConfigHosts(sshConfigPath)
+	items, err := sshConfigHosts(*sshConfigPath)
 	if err != nil {
 		fmt.Println("failed to read SSH configuration: %w", err)
 		os.Exit(1)
 	}
 
-	itemsToJson(recentlyUsedPath, items, false)
+	itemsToJson(*recentlyUsedPath, items, false)
 
-	sortedItems, err := itemsFromJson(recentlyUsedPath)
+	sortedItems, err := itemsFromJson(*recentlyUsedPath)
 	if err != nil {
 		fmt.Println("failed to sort items: %w", err)
 		os.Exit(1)
 	}
-	p := tea.NewProgram(newModel(items, sortedItems), tea.WithAltScreen())
+	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath), tea.WithAltScreen())
 
 	m, err := p.Run()
 	if err != nil {
