@@ -87,7 +87,24 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 	// and from any included files if there were any
 	if len(allItems) == includeCount && includeCount != 0 {
 		allItems = append(allItems, items)
-		return flatten(allItems), nil
+		flattened := flatten(allItems)
+
+		var result []list.Item
+
+		hostMapBool := make(map[string]bool)
+		for _, j := range flattened {
+			// Use 'Host' value as a basis for checking duplicates
+			key := j.(Item).Host
+			if _, ok := hostMapBool[key]; ok {
+				continue
+			}
+			hostMapBool[key] = true
+			result = append(result, j.(Item))
+		}
+
+		allItems = nil
+		flattened = nil
+		return result, nil
 	}
 
 	// This should trigger when looking inside of an included

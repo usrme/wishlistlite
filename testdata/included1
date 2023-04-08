@@ -3,3 +3,6 @@ Host saturday
 
 Host sunday
 	HostName sunday.local
+
+Host lodestar
+	HostName lodestar.local

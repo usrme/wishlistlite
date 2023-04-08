@@ -72,6 +72,9 @@ func TestSshConfigHosts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		if len(hosts) != len(expected) {
+			t.Fatalf("got %d, wanted %d", len(hosts), len(expected))
+		}
 		for i := range hosts {
 			if hosts[i] != expected[i] {
 				t.Errorf("got %s, wanted %d", hosts[i], expected[i])
