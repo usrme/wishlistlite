@@ -42,7 +42,7 @@ func userHomeDir() string {
 // directory, if a tilde was actually present.
 func expandTilde(filePath string) string {
 	if filePath[0] == '~' {
-		return fmt.Sprintf("%s/%s", userHomeDir(), filePath[1:])
+		return fmt.Sprintf("%s%s", userHomeDir(), filePath[1:])
 	}
 	return filePath
 }
