@@ -283,7 +283,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
 				m.connection.state = "Connecting"
-				m.choice = string(i.Host)
+				m.choice = i.Host
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, m.stopwatch.Init())
 				// Extremely hack-y way to prepend 'm.choice' to 'sshControlParentOpts'
