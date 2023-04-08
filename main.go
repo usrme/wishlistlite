@@ -21,6 +21,10 @@ import (
 // sshExecutableName is the name of the SSH executable present on the local system.
 const sshExecutableName = "ssh"
 
+func newPingOpts(count int) []string {
+	return []string{"-c", fmt.Sprint(count)}
+}
+
 // Paths, 'ping' and SSH control options used by package.
 var (
 	defaultSshConfigPath    = expandTilde("~/.ssh/config")
@@ -28,14 +32,19 @@ var (
 	sshControlPath          = "/dev/shm/control:%h:%p:%r"
 	sshControlChildOpts     = []string{"-S", sshControlPath}
 	sshControlParentOpts    = []string{"-T", "-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
-	pingCount               = 4
-	pingOpts                = []string{"-c", fmt.Sprint(pingCount)}
+	defaultPingCount        = 4
+	pingOpts                = newPingOpts(defaultPingCount)
 )
 
 func main() {
 	sshConfigPath := flag.String("sshconfigpath", defaultSshConfigPath, "Path to SSH configuration file")
 	recentlyUsedPath := flag.String("recentlyusedpath", defaultRecentlyUsedPath, "Path to recent SSH connections file")
+	pingCount := flag.Int("pingcount", defaultPingCount, "Number of times a host should be pinged")
 	flag.Parse()
+
+	if *pingCount != defaultPingCount {
+		pingOpts = newPingOpts(*pingCount)
+	}
 
 	sshExecutablePath, err := exec.LookPath(sshExecutableName)
 	// Using 'panic()' as it's supposedly acceptable during initialization phases:
@@ -57,7 +66,7 @@ func main() {
 		fmt.Println("failed to sort items: %w", err)
 		os.Exit(1)
 	}
-	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath), tea.WithAltScreen())
+	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts), tea.WithAltScreen())
 
 	m, err := p.Run()
 	if err != nil {

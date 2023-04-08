@@ -99,9 +99,10 @@ type model struct {
 	pingSpinner      spinner.Model
 	stopwatch        stopwatch.Model
 	recentlyUsedPath string
+	pingOpts         []string
 }
 
-func newModel(items, sortedItems []list.Item, path string) model {
+func newModel(items, sortedItems []list.Item, path string, pingOpts []string) model {
 	// Set up default delegate for styling
 	defaultDelegate := list.NewDefaultDelegate()
 	defaultDelegate.Styles.SelectedTitle = defaultDelegate.Styles.SelectedTitle.
@@ -165,6 +166,7 @@ func newModel(items, sortedItems []list.Item, path string) model {
 		pingSpinner:      psp,
 		stopwatch:        st,
 		recentlyUsedPath: path,
+		pingOpts:         pingOpts,
 	}
 }
 
@@ -308,7 +310,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.connection.state = "Pinging"
 				m.choice = i.Hostname
 				cmds = append(cmds, m.pingSpinner.Tick)
-				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, "ping", 2, true, append([]string{m.choice}, pingOpts...)...))
+				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, "ping", 2, true, append([]string{m.choice}, m.pingOpts...)...))
 			}
 
 		case key.Matches(msg, customKeys.Connect):
@@ -380,7 +382,7 @@ func (m model) View() string {
 	}
 
 	if m.connection.state == "Pinging" {
-		m.list.NewStatusMessage(fmt.Sprintf("%s %s", m.pingSpinner.View(), versionStyle(fmt.Sprintf("Pinging %q %d times", m.list.SelectedItem().(Item).Host, pingCount))))
+		m.list.NewStatusMessage(fmt.Sprintf("%s %s", m.pingSpinner.View(), versionStyle(fmt.Sprintf("Pinging %q %s times", m.list.SelectedItem().(Item).Host, m.pingOpts[len(m.pingOpts)-1]))))
 	} else if m.connection.state == "Pinged" {
 		m.list.NewStatusMessage(versionStyle(m.connection.output))
 	} else {
