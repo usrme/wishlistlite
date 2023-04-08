@@ -32,6 +32,7 @@ var (
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow).Padding(0, 0, 0, 2)
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	spinnerStyle      = lipgloss.NewStyle().Foreground(nordAuroraGreen)
+	pingSpinnerStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow)
 	versionStyle      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).Render
 )
 
@@ -95,6 +96,7 @@ type model struct {
 	defaultDelegate  list.ItemDelegate
 	connectDelegate  list.ItemDelegate
 	spinner          spinner.Model
+	pingSpinner      spinner.Model
 	stopwatch        stopwatch.Model
 	recentlyUsedPath string
 }
@@ -123,19 +125,17 @@ func newModel(items, sortedItems []list.Item, path string) model {
 	hostList.FilterInput.PromptStyle = filterPromptStyle
 	hostList.FilterInput.Cursor.Style = filterCursorStyle
 
+	bindings := []key.Binding{
+		customKeys.Input,
+		customKeys.Connect,
+		customKeys.Cancel,
+		customKeys.Sort,
+		customKeys.Delete,
+		customKeys.Ping,
+	}
 	// Make sure custom keys have help text available
-	hostList.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{customKeys.Input, customKeys.Connect, customKeys.Cancel, customKeys.Sort, customKeys.Delete}
-	}
-	hostList.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			customKeys.Input,
-			customKeys.Connect,
-			customKeys.Cancel,
-			customKeys.Sort,
-			customKeys.Delete,
-		}
-	}
+	hostList.AdditionalShortHelpKeys = func() []key.Binding { return bindings }
+	hostList.AdditionalFullHelpKeys = func() []key.Binding { return bindings }
 
 	// Set up input prompt for custom connection
 	input := textinput.New()
@@ -146,6 +146,10 @@ func newModel(items, sortedItems []list.Item, path string) model {
 	sp := spinner.New()
 	sp.Spinner = spinner.Pulse
 	sp.Style = spinnerStyle
+
+	psp := spinner.New()
+	psp.Spinner = spinner.Pulse
+	psp.Style = pingSpinnerStyle
 
 	st := stopwatch.NewWithInterval(time.Millisecond)
 	return model{
@@ -158,6 +162,7 @@ func newModel(items, sortedItems []list.Item, path string) model {
 		defaultDelegate:  defaultDelegate,
 		connectDelegate:  connectDelegate,
 		spinner:          sp,
+		pingSpinner:      psp,
 		stopwatch:        st,
 		recentlyUsedPath: path,
 	}
@@ -166,7 +171,13 @@ func newModel(items, sortedItems []list.Item, path string) model {
 // execCommand returns a command that runs 'name' command with
 // 'arg...' in the background when called writing to channels
 // 'outChan' and 'errChan' depending on the scenario.
-func execCommand(outChan chan []string, errChan chan []string, name string, arg ...string) tea.Cmd {
+//
+// 'lineTail' is for the purposes of storing only the last N
+// number of lines from an output.
+//
+// 'wait' is required for commands where the entire output is
+// required and the command must waited upon to finish.
+func execCommand(outChan chan []string, errChan chan []string, name string, lineTail int, wait bool, arg ...string) tea.Cmd {
 	return func() tea.Msg {
 		c := exec.Command(name, arg...)
 		stdout, _ := c.StdoutPipe()
@@ -189,7 +200,13 @@ func execCommand(outChan chan []string, errChan chan []string, name string, arg 
 		for scanner.Scan() {
 			out = append(out, scanner.Text())
 		}
+		if lineTail > 0 {
+			out = out[len(out)-lineTail:]
+		}
 		outChan <- connectionOutputMsg(out)
+		if wait {
+			c.Wait()
+		}
 		return nil
 	}
 }
@@ -263,12 +280,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "ctrl+c", "q":
-			m.quitting = true
-			return m, tea.Quit
+			return m.quitProgram()
 		}
-		// Don't match any of the keys below if we're actively filtering
+		// Don't match any of the keys below if we're actively filtering,
+		// but the above Ctrl+C and Q should still quit when filtering.
+		// In any other mode Esc should still quit unless specified otherwise.
 		if m.list.FilterState() == list.Filtering {
 			break
+		} else {
+			switch keypress := msg.String(); keypress {
+			case "esc":
+				return m.quitProgram()
+			}
 		}
 		switch {
 		// When the key for initiating a custom connection was pressed,
@@ -279,6 +302,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetDelegate(m.connectDelegate)
 			cmds = append(cmds, textinput.Blink)
 
+		case key.Matches(msg, customKeys.Ping):
+			i, ok := m.list.SelectedItem().(Item)
+			if ok {
+				m.connection.state = "Pinging"
+				m.choice = i.Hostname
+				cmds = append(cmds, m.pingSpinner.Tick)
+				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, "ping", 2, true, append([]string{m.choice}, pingOpts...)...))
+			}
+
 		case key.Matches(msg, customKeys.Connect):
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
@@ -287,7 +319,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, m.stopwatch.Init())
 				// Extremely hack-y way to prepend 'm.choice' to 'sshControlParentOpts'
-				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, sshExecutableName, append([]string{m.choice}, sshControlParentOpts...)...))
+				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, sshExecutableName, 0, false, append([]string{m.choice}, sshControlParentOpts...)...))
 			}
 
 		case key.Matches(msg, customKeys.Sort):
@@ -303,13 +335,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// When something was received as 'connectionOutputMsg'
 	// store what was received and stop all processing
 	case connectionOutputMsg:
-		m.connection.output = strings.Join(msg, "\n")
-		m.connection.startupTime = m.stopwatch.Elapsed()
-		m.connection.state = "Connected"
-		return m.recordConnection(m.list.SelectedItem().(Item))
+		if m.connection.state == "Pinging" {
+			m.connection.state = "Pinged"
+			last := msg[len(msg)-1]
+			// The last line of the output is only empty when the ping did not succeed
+			if last == "" {
+				m.connection.output = fmt.Sprintf("Could not ping %q", m.list.SelectedItem().(Item).Host)
+			} else {
+				m.connection.output = fmt.Sprintf("%q %s", m.list.SelectedItem().(Item).Host, last)
+			}
+			cmds = append(cmds, waitForCommandOutput(m.outputChan)) // Continue waiting for new output
+		} else {
+			m.connection.output = strings.Join(msg, "\n")
+			m.connection.startupTime = m.stopwatch.Elapsed()
+			m.connection.state = "Connected"
+			return m.recordConnection(m.list.SelectedItem().(Item))
+		}
 	case spinner.TickMsg:
+		m.pingSpinner, cmd = m.pingSpinner.Update(msg)
+		cmds = append(cmds, cmd)
 		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
+		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
 	}
 
 	m.stopwatch, cmd = m.stopwatch.Update(msg)
@@ -332,7 +379,14 @@ func (m model) View() string {
 		return style.Render(view)
 	}
 
-	m.list.NewStatusMessage(versionStyle(pkgVersion()))
+	if m.connection.state == "Pinging" {
+		m.list.NewStatusMessage(fmt.Sprintf("%s %s", m.pingSpinner.View(), versionStyle(fmt.Sprintf("Pinging %q %d times", m.list.SelectedItem().(Item).Host, pingCount))))
+	} else if m.connection.state == "Pinged" {
+		m.list.NewStatusMessage(versionStyle(m.connection.output))
+	} else {
+		m.list.NewStatusMessage(versionStyle(pkgVersion()))
+	}
+
 	m.list.Styles.HelpStyle.Padding(0, 0, 0, 2)
 	style = docStyle
 
@@ -369,6 +423,14 @@ func (m model) View() string {
 	sections = append(sections, m.list.View())
 	view = lipgloss.JoinVertical(lipgloss.Left, sections...)
 	return style.Render(view)
+}
+
+func (m model) quitProgram() (tea.Model, tea.Cmd) {
+	// Clear the output just in case something was stored
+	m.connection.output = ""
+	m.choice = ""
+	m.quitting = true
+	return m, tea.Quit
 }
 
 // updateCustomInput updates the model's state based on a

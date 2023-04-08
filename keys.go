@@ -8,6 +8,7 @@ type customKeyMap struct {
 	Cancel  key.Binding
 	Sort    key.Binding
 	Delete  key.Binding
+	Ping    key.Binding
 }
 
 var customKeys = customKeyMap{
@@ -30,5 +31,9 @@ var customKeys = customKeyMap{
 	Delete: key.NewBinding(
 		key.WithKeys("d"),
 		key.WithHelp("d", "delete from recents"),
+	),
+	Ping: key.NewBinding(
+		key.WithKeys("p"),
+		key.WithHelp("p", "ping host"),
 	),
 }

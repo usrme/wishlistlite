@@ -21,13 +21,15 @@ import (
 // sshExecutableName is the name of the SSH executable present on the local system.
 const sshExecutableName = "ssh"
 
-// Paths and SSH control options used by package.
+// Paths, 'ping' and SSH control options used by package.
 var (
 	defaultSshConfigPath    = expandTilde("~/.ssh/config")
 	defaultRecentlyUsedPath = expandTilde("~/.ssh/recent.json")
 	sshControlPath          = "/dev/shm/control:%h:%p:%r"
 	sshControlChildOpts     = []string{"-S", sshControlPath}
 	sshControlParentOpts    = []string{"-T", "-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
+	pingCount               = 4
+	pingOpts                = []string{"-c", fmt.Sprint(pingCount)}
 )
 
 func main() {
