@@ -18,6 +18,7 @@ func TestSshConfigHosts(t *testing.T) {
 		{"good", "testdata/good", 11},
 		{"commented", "testdata/commented", 2},
 		{"invalid", "testdata/invalid", 0},
+		{"includedTop", "testdata/includedTop", 3},
 	}
 	for _, test := range cases {
 		t.Run(test.Description, func(t *testing.T) {
