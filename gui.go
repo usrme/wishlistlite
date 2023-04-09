@@ -24,9 +24,7 @@ var (
 	nordAuroraGreen    = lipgloss.Color("#a3be8c")
 	dimNordAuroraGreen = lipgloss.Color("#7a8e69")
 	titleStyle         = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#fffdf5ff")).
-				Background(lipgloss.Color("#5e81ac")). // Nord Frost dark blue
-				Padding(0, 1)
+				Foreground(lipgloss.Color("#fffdf5ff"))
 	filterPromptStyle = lipgloss.NewStyle().Foreground(nordAuroraYellow)
 	filterCursorStyle = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	inputPromptStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow).Padding(0, 0, 0, 2)
@@ -389,7 +387,6 @@ func (m model) View() string {
 		m.list.NewStatusMessage(versionStyle(pkgVersion()))
 	}
 
-	m.list.Styles.HelpStyle.Padding(0, 0, 0, 2)
 	style = docStyle
 
 	if m.connectInput.Focused() {
