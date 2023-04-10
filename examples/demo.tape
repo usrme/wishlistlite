@@ -5,6 +5,7 @@ Set FontSize 20
 Set Width 1200
 Set Height 800
 Set Padding 80
+Set Framerate 45
 Set Theme "nord"
 
 # Enter program
