@@ -1,8 +1,8 @@
 Output examples/demo.gif
 
 Set Shell "bash"
-Set FontSize 16
-Set Width 1800
+Set FontSize 20
+Set Width 1200
 Set Height 800
 Set Padding 80
 Set Theme "nord"
@@ -26,13 +26,18 @@ Sleep 2
 Escape
 Sleep 2
 
-# Connect to a host and re-open program
-Up@500ms
+# Show recents file
+Type "r"
+Sleep 2
+Type "r"
+Sleep 2
+
+# Connect to a host, exit, and re-open
+Down@500ms
 Enter
 Sleep 5
 Ctrl+D
 Sleep 2
-
 Type "wishlistlite"
 Sleep 500ms
 Enter
