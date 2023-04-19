@@ -41,6 +41,7 @@ func main() {
 	recentlyUsedPath := flag.String("recentlyusedpath", defaultRecentlyUsedPath, "Path to recent SSH connections file")
 	pingCount := flag.Int("pingcount", defaultPingCount, "Number of times a host should be pinged")
 	flag.Parse()
+	sshOpts := flag.Args()
 
 	if *pingCount != defaultPingCount {
 		pingOpts = newPingOpts(*pingCount)
@@ -66,7 +67,7 @@ func main() {
 		fmt.Println("failed to sort items: %w", err)
 		os.Exit(1)
 	}
-	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts), tea.WithAltScreen())
+	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts, sshOpts), tea.WithAltScreen())
 
 	m, err := p.Run()
 	if err != nil {

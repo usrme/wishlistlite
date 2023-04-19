@@ -98,9 +98,10 @@ type model struct {
 	stopwatch        stopwatch.Model
 	recentlyUsedPath string
 	pingOpts         []string
+	sshOpts          []string
 }
 
-func newModel(items, sortedItems []list.Item, path string, pingOpts []string) model {
+func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []string) model {
 	// Set up default delegate for styling
 	defaultDelegate := list.NewDefaultDelegate()
 	defaultDelegate.Styles.SelectedTitle = defaultDelegate.Styles.SelectedTitle.
@@ -165,6 +166,7 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts []string) mo
 		stopwatch:        st,
 		recentlyUsedPath: path,
 		pingOpts:         pingOpts,
+		sshOpts:          sshOpts,
 	}
 }
 
