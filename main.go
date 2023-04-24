@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -40,6 +41,7 @@ func main() {
 	sshConfigPath := flag.String("sshconfigpath", defaultSshConfigPath, "Path to SSH configuration file")
 	recentlyUsedPath := flag.String("recentlyusedpath", defaultRecentlyUsedPath, "Path to recent SSH connections file")
 	pingCount := flag.Int("pingcount", defaultPingCount, "Number of times a host should be pinged")
+	sshOpts := flag.String("sshoptions", "", "Additional options passed to SSH. Must be contained in quotes")
 	flag.Parse()
 
 	if *pingCount != defaultPingCount {
@@ -66,7 +68,7 @@ func main() {
 		fmt.Println("failed to sort items: %w", err)
 		os.Exit(1)
 	}
-	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts), tea.WithAltScreen())
+	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts, strings.Split(*sshOpts, " ")), tea.WithAltScreen())
 
 	m, err := p.Run()
 	if err != nil {

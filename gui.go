@@ -98,9 +98,10 @@ type model struct {
 	stopwatch        stopwatch.Model
 	recentlyUsedPath string
 	pingOpts         []string
+	sshOpts          []string
 }
 
-func newModel(items, sortedItems []list.Item, path string, pingOpts []string) model {
+func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []string) model {
 	// Set up default delegate for styling
 	defaultDelegate := list.NewDefaultDelegate()
 	defaultDelegate.Styles.SelectedTitle = defaultDelegate.Styles.SelectedTitle.
@@ -165,6 +166,7 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts []string) mo
 		stopwatch:        st,
 		recentlyUsedPath: path,
 		pingOpts:         pingOpts,
+		sshOpts:          sshOpts,
 	}
 }
 
@@ -318,8 +320,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.choice = i.Host
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, m.stopwatch.Init())
-				// Extremely hack-y way to prepend 'm.choice' to 'sshControlParentOpts'
-				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, sshExecutableName, 0, false, append([]string{m.choice}, sshControlParentOpts...)...))
+				// Extremely hack-y way to prepend 'm.choice'
+				opts := append([]string{m.choice}, m.sshOpts...)
+				opts = append(opts, sshControlParentOpts...)
+				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, sshExecutableName, 0, false, opts...))
 			}
 
 		case key.Matches(msg, customKeys.Sort):
