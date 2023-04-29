@@ -160,6 +160,8 @@ func findHosts(content []byte) []list.Item {
 	// Map for checking whether host already exists
 	hostMapBool := make(map[string]bool)
 
+	// Make sure 'HostName' was defined correctly (i.e. followed by a space)
+	pat = regexp.MustCompile(`HostName\s(.*)`)
 	var items []list.Item
 	for _, m := range mainMatches {
 		// Use 'Host' value as a basis for checking duplicates
@@ -170,8 +172,6 @@ func findHosts(content []byte) []list.Item {
 		hostMapBool[m[1]] = true
 		// If 'HostName' was present
 		if m[2] != "" {
-			// Make sure 'HostName' was defined correctly (i.e. followed by a space)
-			pat := regexp.MustCompile(`HostName\s(.*)`)
 			for _, n := range pat.FindAllStringSubmatch(m[2], -1) {
 				// 'm[3]' represents anything additional after 'HostName' limited to one line
 				items = append(items, Item{Host: m[1], Hostname: n[1], Extra: strings.TrimSpace(m[3])})
