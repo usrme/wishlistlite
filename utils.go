@@ -146,9 +146,8 @@ func findIncludedFiles(content []byte) ([]string, int) {
 	return filePaths, includeCount
 }
 
-// findHosts returns a slice of 'list.Item' from each
-// value found next to a 'Host' option in the given
-// 'content' slice of bytes.
+// findHosts returns a slice of 'list.Item' from each value found next to a
+// 'Host' option in the given 'content' slice of bytes.
 func findHosts(content []byte) []list.Item {
 	// Grab all 'Host' ('Host' not included), 'HostName' ('HostName' included),
 	// and whatever was right after 'HostName' if anything. That 'whatever' will
