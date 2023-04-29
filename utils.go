@@ -167,17 +167,18 @@ func findHosts(content []byte) []list.Item {
 		if _, ok := hostMapBool[m[1]]; ok {
 			continue
 		}
-
 		hostMapBool[m[1]] = true
+
+		i := Item{Host: m[1], Hostname: m[1]}
 		// If 'HostName' was present
 		if m[2] != "" {
 			for _, n := range pat.FindAllStringSubmatch(m[2], -1) {
 				// 'm[3]' represents anything additional after 'HostName' limited to one line
-				items = append(items, Item{Host: m[1], Hostname: n[1], Extra: strings.TrimSpace(m[3])})
+				i = Item{Host: m[1], Hostname: n[1], Extra: strings.TrimSpace(m[3])}
+				items = append(items, i)
 			}
-		} else {
-			items = append(items, Item{Host: m[1], Hostname: m[1]})
 		}
+		items = append(items, i)
 	}
 
 	return items
