@@ -68,7 +68,11 @@ func main() {
 		fmt.Println("failed to sort items: %w", err)
 		os.Exit(1)
 	}
-	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts, strings.Split(*sshOpts, " ")), tea.WithAltScreen())
+	sshopts := strings.Split(*sshOpts, " ")
+	if *sshOpts == "" {
+		sshopts = []string{}
+	}
+	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts, sshopts), tea.WithAltScreen())
 
 	m, err := p.Run()
 	if err != nil {
