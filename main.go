@@ -16,6 +16,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -40,6 +41,8 @@ var (
 func main() {
 	sshConfigPath := flag.String("sshconfigpath", defaultSshConfigPath, "Path to SSH configuration file")
 	recentlyUsedPath := flag.String("recentlyusedpath", defaultRecentlyUsedPath, "Path to recent SSH connections file")
+	iniFilePath := flag.String("inifilepath", "", "Path to INI file path (e.g. Ansible inventory file) in lieu of SSH configuration file")
+	switchFilter := flag.Bool("switchfilter", false, "Whether or not to switch filter value from host to hostname")
 	pingCount := flag.Int("pingcount", defaultPingCount, "Number of times a host should be pinged")
 	sshOpts := flag.String("sshoptions", "", "Additional options passed to SSH. Must be contained in quotes")
 	flag.Parse()
@@ -55,10 +58,19 @@ func main() {
 		panic(err)
 	}
 
-	items, err := sshConfigHosts(*sshConfigPath)
-	if err != nil {
-		fmt.Println("failed to read SSH configuration: %w", err)
-		os.Exit(1)
+	var items []list.Item
+	if *iniFilePath != "" {
+		items, err = iniHosts(*iniFilePath, *switchFilter)
+		if err != nil {
+			fmt.Println("failed to read input file: %w", err)
+			os.Exit(1)
+		}
+	} else {
+		items, err = sshConfigHosts(*sshConfigPath)
+		if err != nil {
+			fmt.Println("failed to read SSH configuration: %w", err)
+			os.Exit(1)
+		}
 	}
 
 	itemsToJson(*recentlyUsedPath, items, false)

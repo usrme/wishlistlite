@@ -36,10 +36,11 @@ var (
 
 // An Item is an item that appears in the list.
 type Item struct {
-	Host      string
-	Hostname  string
-	Timestamp string
-	Extra     string
+	Host         string
+	Hostname     string
+	Timestamp    string
+	Extra        string
+	SwitchFilter bool
 }
 
 // Title returns the Host field for an Item as that is the
@@ -61,7 +62,12 @@ func (i Item) Description() string {
 
 // FilterValue returns the value that is used when
 // filtering the list.
-func (i Item) FilterValue() string { return i.Host }
+func (i Item) FilterValue() string {
+	if i.SwitchFilter {
+		return i.Hostname
+	}
+	return i.Host
+}
 
 // A connection stores information about a successful
 // connection that was made against a chosen host.

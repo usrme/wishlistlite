@@ -82,6 +82,29 @@ func TestSshConfigHosts(t *testing.T) {
 			}
 		}
 	})
+	t.Run("expected hosts 'inifile'", func(t *testing.T) {
+		var hosts []list.Item
+		expected := []list.Item{
+			Item{Host: "chat.local", Hostname: "chat"},
+			Item{Host: "turn.local", Hostname: "turn"},
+			Item{Host: "lieu.local", Hostname: "lieu.local"},
+			Item{Host: "vt.local", Hostname: "vt.local"},
+			Item{Host: "graph.local", Hostname: "graph"},
+		}
+		hosts, err := iniHosts("testdata/inifile", false)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(hosts) != len(expected) {
+			t.Fatalf("got %d, wanted %d", len(hosts), len(expected))
+		}
+		for i := range hosts {
+			if hosts[i] != expected[i] {
+				t.Errorf("got %s, wanted %d", hosts[i], expected[i])
+			}
+		}
+	})
 }
 
 func TestMoveToFront(t *testing.T) {
@@ -166,7 +189,7 @@ func TestItemToFront(t *testing.T) {
 
 			if got[0] != test.Want[0] {
 				log.Println(got)
-				t.Errorf("got %s, wanted %s", got[0], test.Item)
+				t.Errorf("got %s, wanted %s", got[0], test.Want[0])
 			}
 		})
 	}

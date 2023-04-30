@@ -47,6 +47,53 @@ func expandTilde(filePath string) string {
 	return filePath
 }
 
+// IniHosts returns a slice of 'list.Item' containing hosts from an INI-like
+// file (e.g. Ansible inventory file) as type 'Item' and 'error'.
+func iniHosts(filePath string, switchFilter bool) ([]list.Item, error) {
+	filePath = expandTilde(filePath)
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
+	}
+
+	items := findIniHosts(content, switchFilter)
+	return items, nil
+}
+
+// findIniHosts returns a slice of 'list.Item' from the given 'content' slice of bytes.
+func findIniHosts(content []byte, switchFilter bool) []list.Item {
+	// Grab all sections between brackets if they just contain letters and hyphens,
+	// and group all the lines after them.
+	pat := regexp.MustCompile(`(?m)^\[[a-zA-Z-]*\][\r\n]((?:[a-zA-Z0-9-_\.]+(?:[\r\n]|\s)?(?:ansible_host=[^\s]+\s)?.*[\r\n])+)`)
+	mainMatches := pat.FindAllStringSubmatch(string(content), -1)
+
+	// Map for checking whether host already exists
+	hostMapBool := make(map[string]bool)
+
+	var items []list.Item
+	// Make sure every line starts with alphanumeric characters and a limited
+	// set of symbols, potentially followed by an 'ansible_host' variable.
+	pat = regexp.MustCompile(`(?m)^([a-zA-Z0-9-_\.]+)(?:\s+ansible_host=([^\s]+))?`)
+	for _, m := range mainMatches {
+		for _, n := range pat.FindAllStringSubmatch(m[1], -1) {
+			// Use the first set of characters as a basis for checking duplicates
+			if _, ok := hostMapBool[n[1]]; ok {
+				continue
+			}
+			hostMapBool[n[1]] = true
+
+			i := Item{Host: n[1], Hostname: n[1], SwitchFilter: switchFilter}
+			if n[2] != "" {
+				i = Item{Host: n[2], Hostname: n[1], SwitchFilter: switchFilter}
+			}
+			items = append(items, i)
+		}
+	}
+
+	return items
+}
+
 // allItems represents a multi-dimensional slice of 'list.Item'.
 // Each additional slice within the outer slice represents a
 // slice of 'list.Item' from an 'Include' in 'sshConfigHosts'.

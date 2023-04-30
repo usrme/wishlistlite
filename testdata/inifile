@@ -1,0 +1,8 @@
+[host-mgmt]
+chat ansible_host=chat.local
+turn ansible_host=turn.local
+lieu.local
+
+[cert-mgmt]
+vt.local
+graph ansible_host=graph.local
