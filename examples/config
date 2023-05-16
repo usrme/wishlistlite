@@ -1,0 +1,10 @@
+Host wishlistlite
+    HostName localhost
+
+Host elegy
+    HostName 172.17.0.2
+    User usrme
+
+Host clash
+    HostName localhost
+    Port 2223
