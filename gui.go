@@ -335,10 +335,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, customKeys.Sort):
 			return m.sort(msg)
 		}
-	// When something was received as 'connectionErrorMsg'
-	// clear the choice from the model as the logic in
-	// 'main.go' checks it to be present
 	case connectionErrorMsg:
+		if m.connection.state == "Pinging" {
+			m.connection.state = "Pinged"
+			m.connection.output = strings.Split(strings.Join(msg, ""), "\n")[0]
+			return m, nil
+		}
+		// When something was received as 'connectionErrorMsg'
+		// clear the choice from the model as the logic in
+		// 'main.go' checks it to be present
 		m.choice = ""
 		m.err = strings.Join(msg, "")
 		return m, tea.Quit
