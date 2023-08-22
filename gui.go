@@ -338,15 +338,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case connectionErrorMsg:
 		if m.connection.state == "Pinging" {
 			m.connection.state = "Pinged"
-			m.connection.output = strings.Split(strings.Join(msg, ""), "\n")[0]
-			return m, nil
+			m.connection.output = fmt.Sprintf("%q %s", m.list.SelectedItem().(Item).Host, strings.Split(strings.Join(msg, ""), "\n")[0])
+			cmds = append(cmds, waitForCommandError(m.errorChan)) // Continue waiting for new errors
+		} else {
+			// When something was received as 'connectionErrorMsg'
+			// clear the choice from the model as the logic in
+			// 'main.go' checks it to be present
+			m.choice = ""
+			m.err = strings.Join(msg, "")
+			return m, tea.Quit
 		}
-		// When something was received as 'connectionErrorMsg'
-		// clear the choice from the model as the logic in
-		// 'main.go' checks it to be present
-		m.choice = ""
-		m.err = strings.Join(msg, "")
-		return m, tea.Quit
 	// When something was received as 'connectionOutputMsg'
 	// store what was received and stop all processing
 	case connectionOutputMsg:
