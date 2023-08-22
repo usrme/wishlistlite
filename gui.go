@@ -355,7 +355,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			last := msg[len(msg)-1]
 			// The last line of the output is only empty when the ping did not succeed
 			if last == "" {
-				m.connection.output = fmt.Sprintf("Could not ping %q", m.list.SelectedItem().(Item).Host)
+				m.connection.output = fmt.Sprintf("%q could not ping", m.list.SelectedItem().(Item).Host)
 			} else {
 				m.connection.output = fmt.Sprintf("%q %s", m.list.SelectedItem().(Item).Host, last)
 			}
