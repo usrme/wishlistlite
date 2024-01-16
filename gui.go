@@ -437,7 +437,7 @@ func (m model) View() string {
 		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
 	}
 
-	if m.sorted {
+	if m.sorted && m.list.FilterState() != list.Filtering {
 		customKeys.Delete.SetEnabled(true)
 	}
 
