@@ -9,6 +9,7 @@ type customKeyMap struct {
 	Sort    key.Binding
 	Delete  key.Binding
 	Ping    key.Binding
+	Copy    key.Binding
 }
 
 var customKeys = customKeyMap{
@@ -35,5 +36,9 @@ var customKeys = customKeyMap{
 	Ping: key.NewBinding(
 		key.WithKeys("p"),
 		key.WithHelp("p", "ping host"),
+	),
+	Copy: key.NewBinding(
+		key.WithKeys("c"),
+		key.WithHelp("c", "copy 'HostName'"),
 	),
 }

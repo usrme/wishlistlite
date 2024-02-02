@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -138,6 +139,7 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []s
 		customKeys.Sort,
 		customKeys.Delete,
 		customKeys.Ping,
+		customKeys.Copy,
 	}
 	// Make sure custom keys have help text available
 	hostList.AdditionalShortHelpKeys = func() []key.Binding { return bindings }
@@ -334,7 +336,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, customKeys.Sort):
 			return m.sort(msg)
+
+		case key.Matches(msg, customKeys.Copy):
+			i, ok := m.list.SelectedItem().(Item)
+			if ok {
+				m.connection.state = "Copying"
+				clip := i.Hostname
+				err := clipboard.WriteAll(clip)
+				m.connection.output = fmt.Sprintf("Copied %q to clipboard", clip)
+				if err != nil {
+					m.connection.output = "Unable to copy"
+				}
+			}
 		}
+
 	case connectionErrorMsg:
 		if m.connection.state == "Pinging" {
 			m.connection.state = "Pinged"
@@ -403,7 +418,7 @@ func (m model) View() string {
 
 	if m.connection.state == "Pinging" {
 		m.list.NewStatusMessage(fmt.Sprintf("%s %s", m.pingSpinner.View(), versionStyle(fmt.Sprintf("Pinging %q %s times", m.list.SelectedItem().(Item).Host, m.pingOpts[len(m.pingOpts)-1]))))
-	} else if m.connection.state == "Pinged" {
+	} else if m.connection.state == "Pinged" || m.connection.state == "Copying" {
 		m.list.NewStatusMessage(versionStyle(m.connection.output))
 	} else {
 		m.list.NewStatusMessage(versionStyle(pkgVersion()))
