@@ -52,6 +52,8 @@ To sort by recently connected to hosts press the letter `r`, which will read the
 
 To delete entries from the recently connected view press the letter `d`, which will remove the selected host from the view and immediately save the changes to the `~/.ssh/recent.json` file.
 
+To copy a highlighted entry's 'HostName' value to the clipboard press the letter `c`. This works when viewing configuration entries and the recently connected to hosts.
+
 ### Caveats
 
 Hosts starting with an asterisk are excluded as those (in my use case) usually mean either a `ProxyJump` or a `User` declaration right after. The entire parsing is done with regular expressions, so there may be other edge cases with parsing, but I've tried to cover the most common cases with the included tests.
