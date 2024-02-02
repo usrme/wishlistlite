@@ -33,7 +33,7 @@ var (
 	defaultRecentlyUsedPath = expandTilde("~/.ssh/recent.json")
 	sshControlPath          = "/dev/shm/control:%h:%p:%r"
 	sshControlChildOpts     = []string{"-S", sshControlPath}
-	sshControlParentOpts    = []string{"-T", "-o", "ControlMaster=yes", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
+	sshControlParentOpts    = []string{"-T", "-o", "ControlMaster=auto", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
 	defaultPingCount        = 4
 	pingOpts                = newPingOpts(defaultPingCount)
 )
