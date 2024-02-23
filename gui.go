@@ -279,6 +279,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.RemoveItem(index)
 				itemsToJson(m.recentlyUsedPath, m.list.Items(), true)
 				m.sortedItems = m.list.Items()
+				if len(m.sortedItems) == 0 {
+					return m.unsort(msg)
+				}
 				return m, nil
 			case key.Matches(msg, customKeys.Sort):
 				return m.unsort(msg)
