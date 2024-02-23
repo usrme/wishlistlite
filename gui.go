@@ -338,7 +338,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, customKeys.Sort):
-			return m.sort(msg)
+			m.connection.state = "Sorting"
+			if len(m.sortedItems) == 0 {
+				m.connection.output = "No recently used hosts"
+			} else {
+				return m.sort(msg)
+			}
 
 		case key.Matches(msg, customKeys.Copy):
 			i, ok := m.list.SelectedItem().(Item)
@@ -421,7 +426,7 @@ func (m model) View() string {
 
 	if m.connection.state == "Pinging" {
 		m.list.NewStatusMessage(fmt.Sprintf("%s %s", m.pingSpinner.View(), versionStyle(fmt.Sprintf("Pinging %q %s times", m.list.SelectedItem().(Item).Host, m.pingOpts[len(m.pingOpts)-1]))))
-	} else if m.connection.state == "Pinged" || m.connection.state == "Copying" {
+	} else if m.connection.state == "Pinged" || m.connection.state == "Copying" || m.connection.state == "Sorting" {
 		m.list.NewStatusMessage(versionStyle(m.connection.output))
 	} else {
 		m.list.NewStatusMessage(versionStyle(pkgVersion()))
