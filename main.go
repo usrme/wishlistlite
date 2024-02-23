@@ -73,12 +73,9 @@ func main() {
 		}
 	}
 
-	itemsToJson(*recentlyUsedPath, items, false)
-
 	sortedItems, err := itemsFromJson(*recentlyUsedPath)
 	if err != nil {
-		fmt.Println("failed to sort items: %w", err)
-		os.Exit(1)
+		sortedItems = []list.Item{}
 	}
 	sshopts := strings.Split(*sshOpts, " ")
 	if *sshOpts == "" {
