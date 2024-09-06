@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -27,11 +28,18 @@ func newPingOpts(count int) []string {
 	return []string{"-c", fmt.Sprint(count)}
 }
 
+func getSshControlPath() string {
+	if runtime.GOOS == "darwin" {
+		return "/tmp"
+	}
+	return "/dev/shm"
+}
+
 // Paths, 'ping' and SSH control options used by package.
 var (
 	defaultSshConfigPath    = expandTilde("~/.ssh/config")
 	defaultRecentlyUsedPath = expandTilde("~/.ssh/recent.json")
-	sshControlPath          = "/dev/shm/control:%h:%p:%r"
+	sshControlPath          = fmt.Sprintf("%s/control:%s", getSshControlPath(), "%h:%p:%r")
 	sshControlChildOpts     = []string{"-S", sshControlPath}
 	sshControlParentOpts    = []string{"-T", "-o", "ControlMaster=auto", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
 	defaultPingCount        = 4
