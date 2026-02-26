@@ -17,8 +17,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
 )
 
 // sshExecutableName is the name of the SSH executable present on the local system.
@@ -89,7 +89,7 @@ func main() {
 	if *sshOpts == "" {
 		sshopts = []string{}
 	}
-	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts, sshopts), tea.WithAltScreen())
+	p := tea.NewProgram(newModel(items, sortedItems, *recentlyUsedPath, pingOpts, sshopts))
 
 	m, err := p.Run()
 	if err != nil {

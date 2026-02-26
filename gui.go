@@ -8,14 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/stopwatch"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 	"github.com/atotto/clipboard"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/stopwatch"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 var (
@@ -32,7 +33,7 @@ var (
 	inputCursorStyle  = lipgloss.NewStyle().Foreground(nordAuroraOrange)
 	spinnerStyle      = lipgloss.NewStyle().Foreground(nordAuroraGreen)
 	pingSpinnerStyle  = lipgloss.NewStyle().Foreground(nordAuroraYellow)
-	versionStyle      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).Render
+	versionStyle      = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{Light: lipgloss.Color("#A49FA5"), Dark: lipgloss.Color("#777777")}).Render
 )
 
 // An Item is an item that appears in the list.
@@ -129,8 +130,10 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []s
 	hostList := list.New(items, defaultDelegate, 0, 0)
 	hostList.Title = "Wishlist Lite"
 	hostList.Styles.Title = titleStyle
-	hostList.FilterInput.PromptStyle = filterPromptStyle
-	hostList.FilterInput.Cursor.Style = filterCursorStyle
+
+	filterStyles := textinput.DefaultStyles(false)
+	filterStyles.Focused.Prompt = filterPromptStyle
+	hostList.FilterInput.SetStyles(filterStyles)
 
 	bindings := []key.Binding{
 		customKeys.Input,
@@ -148,8 +151,9 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []s
 	// Set up input prompt for custom connection
 	input := textinput.New()
 	input.Prompt = "Connect to: "
-	input.PromptStyle = inputPromptStyle
-	input.Cursor.Style = inputCursorStyle
+	inputStyles := textinput.DefaultStyles(false)
+	inputStyles.Focused.Prompt = inputPromptStyle
+	input.SetStyles(inputStyles)
 
 	sp := spinner.New()
 	sp.Spinner = spinner.Pulse
@@ -159,7 +163,7 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []s
 	psp.Spinner = spinner.Pulse
 	psp.Style = pingSpinnerStyle
 
-	st := stopwatch.NewWithInterval(time.Millisecond)
+	st := stopwatch.New(stopwatch.WithInterval(time.Millisecond))
 	return model{
 		list:             hostList,
 		errorChan:        make(chan []string),
@@ -270,7 +274,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.sorted {
 		switch msg := msg.(type) {
-		case tea.KeyMsg:
+		case tea.KeyPressMsg:
 			switch {
 			// When the delete key was pressed remove the item
 			// from both the list of items and from the file
@@ -290,7 +294,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch keypress := msg.String(); keypress {
 		case "ctrl+c", "q":
 			return m.quitProgram()
@@ -411,7 +415,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	var (
 		view     string
 		sections []string
@@ -419,9 +423,9 @@ func (m model) View() string {
 	)
 
 	if m.connection.state == "Connecting" {
-		return fmt.Sprintf("\n\n   %s Connecting... %s\n\n", m.spinner.View(), m.stopwatch.View())
+		return tea.NewView(fmt.Sprintf("\n\n   %s Connecting... %s\n\n", m.spinner.View(), m.stopwatch.View()))
 	} else if m.connection.state == "Connected" {
-		return style.Render(view)
+		return tea.NewView(style.Render(view))
 	}
 
 	if m.connection.state == "Pinging" {
@@ -466,7 +470,9 @@ func (m model) View() string {
 
 	sections = append(sections, m.list.View())
 	view = lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return style.Render(view)
+	v := tea.NewView(style.Render(view))
+	v.AltScreen = true
+	return v
 }
 
 func (m model) quitProgram() (tea.Model, tea.Cmd) {
@@ -481,7 +487,7 @@ func (m model) quitProgram() (tea.Model, tea.Cmd) {
 // different set of keypresses.
 func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch keypress := msg.String(); keypress {
 		case "esc":
 			m.connectInput.Blur()

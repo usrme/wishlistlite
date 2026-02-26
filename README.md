@@ -22,7 +22,7 @@ I made this a little while after discovering the canonical [Wishlist](https://gi
 - using `go install`:
 
 ```bash
-go install github.com/usrme/wishlistlite@latest
+go install github.com/usrme/wishlistlite/v2@latest
 ```
 
 - download a binary from the [releases](https://github.com/usrme/wishlistlite/releases) page
