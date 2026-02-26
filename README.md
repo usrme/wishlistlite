@@ -27,7 +27,7 @@ go install github.com/usrme/wishlistlite/v2@latest
 
 - download a binary from the [releases](https://github.com/usrme/wishlistlite/releases) page
 
-- build it yourself (requires Go 1.18+):
+- build it yourself (requires Go 1.24+):
 
 ```bash
 git clone https://github.com/usrme/wishlistlite.git
