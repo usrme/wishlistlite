@@ -423,7 +423,9 @@ func (m model) View() tea.View {
 	)
 
 	if m.connection.state == "Connecting" {
-		return tea.NewView(fmt.Sprintf("\n\n   %s Connecting... %s\n\n", m.spinner.View(), m.stopwatch.View()))
+		v := tea.NewView(fmt.Sprintf("\n\n   %s Connecting... %s\n\n", m.spinner.View(), m.stopwatch.View()))
+		v.AltScreen = true
+		return v
 	} else if m.connection.state == "Connected" {
 		return tea.NewView(style.Render(view))
 	}
