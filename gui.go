@@ -272,7 +272,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateCustomInput(msg)
 	}
 
-	if m.sorted {
+	if m.sorted && m.list.FilterState() != list.Filtering {
 		switch msg := msg.(type) {
 		case tea.KeyPressMsg:
 			switch {
@@ -296,17 +296,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch keypress := msg.String(); keypress {
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			return m.quitProgram()
 		}
 		// Don't match any of the keys below if we're actively filtering,
-		// but the above Ctrl+C and Q should still quit when filtering.
-		// In any other mode Esc should still quit unless specified otherwise.
+		// but the above Ctrl+C should still quit when filtering.
+		// In any other mode Q and Esc should still quit unless
+		// specified otherwise.
 		if m.list.FilterState() == list.Filtering {
 			break
 		} else {
 			switch keypress := msg.String(); keypress {
-			case "esc":
+			case "q", "esc":
 				return m.quitProgram()
 			}
 		}
