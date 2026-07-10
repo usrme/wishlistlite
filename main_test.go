@@ -107,6 +107,27 @@ func TestSshConfigHosts(t *testing.T) {
 	})
 }
 
+func TestFindIncludedFiles(t *testing.T) {
+	cases := []struct {
+		Description, Content string
+		Want                 int
+	}{
+		{"regular", "Include testdata/included1\n", 1},
+		{"case-insensitive", "include testdata/included1\n", 1},
+		{"without a value", "Include\nHost foo\n", 0},
+		{"with only trailing whitespace", "Include \nHost foo\n", 0},
+	}
+	for _, test := range cases {
+		t.Run(test.Description, func(t *testing.T) {
+			filePaths, count := findIncludedFiles([]byte(test.Content))
+
+			if len(filePaths) != test.Want || count != test.Want {
+				t.Errorf("got %d paths and a count of %d, wanted %d", len(filePaths), count, test.Want)
+			}
+		})
+	}
+}
+
 func TestMoveToFront(t *testing.T) {
 	cases := []struct {
 		Description, Needle string

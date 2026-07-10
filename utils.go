@@ -159,6 +159,12 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 	return items, nil
 }
 
+// includePattern matches an 'Include' option and its value. The value has to
+// be at least one character long and on the same line for it to count, as
+// otherwise an 'Include' without a value could match the contents of the
+// following line.
+var includePattern = regexp.MustCompile(`(?mi)^[ \t]*Include[ \t]+([a-zA-Z0-9_.~*/-]+)`)
+
 // findIncludedFiles returns a slice of strings, each being
 // a file name that was found next to an 'Include' option in
 // the given 'content' slice of bytes, and the total count
@@ -167,13 +173,11 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 // are returned by '[filepath.Glob]'.
 func findIncludedFiles(content []byte) ([]string, int) {
 	var (
-		pat          *regexp.Regexp
 		filePaths    []string
 		includeCount int
 	)
 
-	pat = regexp.MustCompile(`(?m)^Include\s([a-zA-Z0-9_\-\.\~\*\/]*)`)
-	includeMatches := pat.FindAllStringSubmatch(string(content), -1)
+	includeMatches := includePattern.FindAllStringSubmatch(string(content), -1)
 
 	for _, i := range includeMatches {
 		// If an 'Include' value's (i[1]) last character (i[1][len(i[1])-1]) is a wildcard
