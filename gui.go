@@ -143,6 +143,7 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []s
 		customKeys.Delete,
 		customKeys.Ping,
 		customKeys.Copy,
+		customKeys.CopyHost,
 	}
 	// Make sure custom keys have help text available
 	hostList.AdditionalShortHelpKeys = func() []key.Binding { return bindings }
@@ -355,6 +356,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				m.connection.state = "Copying"
 				clip := i.Hostname
+				err := clipboard.WriteAll(clip)
+				m.connection.output = fmt.Sprintf("Copied %q to clipboard", clip)
+				if err != nil {
+					m.connection.output = "Unable to copy"
+				}
+			}
+
+		case key.Matches(msg, customKeys.CopyHost):
+			i, ok := m.list.SelectedItem().(Item)
+			if ok {
+				m.connection.state = "Copying"
+				clip := i.Host
 				err := clipboard.WriteAll(clip)
 				m.connection.output = fmt.Sprintf("Copied %q to clipboard", clip)
 				if err != nil {

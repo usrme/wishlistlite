@@ -3,13 +3,14 @@ package main
 import "charm.land/bubbles/v2/key"
 
 type customKeyMap struct {
-	Input   key.Binding
-	Connect key.Binding
-	Cancel  key.Binding
-	Sort    key.Binding
-	Delete  key.Binding
-	Ping    key.Binding
-	Copy    key.Binding
+	Input    key.Binding
+	Connect  key.Binding
+	Cancel   key.Binding
+	Sort     key.Binding
+	Delete   key.Binding
+	Ping     key.Binding
+	Copy     key.Binding
+	CopyHost key.Binding
 }
 
 var customKeys = customKeyMap{
@@ -40,5 +41,9 @@ var customKeys = customKeyMap{
 	Copy: key.NewBinding(
 		key.WithKeys("c"),
 		key.WithHelp("c", "copy 'HostName'"),
+	),
+	CopyHost: key.NewBinding(
+		key.WithKeys("C"),
+		key.WithHelp("C", "copy 'Host'"),
 	),
 }

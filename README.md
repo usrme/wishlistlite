@@ -52,7 +52,7 @@ To sort by recently connected to hosts press the letter `r`, which will read the
 
 To delete entries from the recently connected view press the letter `d`, which will remove the selected host from the view and immediately save the changes to the `~/.ssh/recent.json` file.
 
-To copy a highlighted entry's 'HostName' value to the clipboard press the letter `c`. This works when viewing configuration entries and the recently connected to hosts.
+To copy a highlighted entry's 'HostName' value to the clipboard press the letter `c`; to copy its 'Host' value press the capital letter `C`. This works when viewing configuration entries and the recently connected to hosts.
 
 ### Caveats
 
