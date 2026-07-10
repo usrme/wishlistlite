@@ -56,7 +56,7 @@ To copy a highlighted entry's 'HostName' value to the clipboard press the letter
 
 ### Caveats
 
-Hosts starting with an asterisk are excluded as those (in my use case) usually mean either a `ProxyJump` or a `User` declaration right after. The entire parsing is done with regular expressions, so there may be other edge cases with parsing, but I've tried to cover the most common cases with the included tests.
+Wildcard (`*`, `?`) and negated (`!`) host patterns are excluded as those aren't hosts that can be connected to directly. The parsing is done line by line while keeping track of each `Host` block, so there may be edge cases with parsing, but I've tried to cover the most common cases with the included tests.
 
 Before starting the execution there is a verification that is made that the `ssh` executable exists and that any necessary SSH keys are already loaded into an SSH agent.
 

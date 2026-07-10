@@ -102,12 +102,11 @@ var allItems [][]list.Item
 // sshConfigHosts returns a slice of 'list.Item' containing hosts from an SSH
 // configuration as type 'Item' and 'error'.
 //
-// It reads a file expected to be a valid SSH configuration file and uses
-// regular expressions to grab 'Include', 'Host', and 'Hostname' values where
-// possible. Possible meaning that it looks for sections of 'Host' that have a
-// 'HostName' field beneath it. Anything other than 'HostName' beneath it is
-// disregarded as they (most likely) include fields like 'User', 'ProxyJump', etc. that
-// have no bearing on listing valid hosts.
+// It reads a file expected to be a valid SSH configuration file and grabs
+// 'Include', 'Host', and 'HostName' values where possible. Fields other than
+// 'HostName' within a 'Host' block are disregarded as they (most likely)
+// include fields like 'User', 'ProxyJump', etc. that have no bearing on
+// listing valid hosts.
 func sshConfigHosts(filePath string) ([]list.Item, error) {
 	filePath = expandTilde(filePath)
 
@@ -197,41 +196,104 @@ func findIncludedFiles(content []byte) ([]string, int) {
 	return filePaths, includeCount
 }
 
+// hostEntry accumulates what is known about a single 'Host' value across
+// all of the configuration blocks that mention it.
+type hostEntry struct {
+	hostname string
+	extra    string
+}
+
 // findHosts returns a slice of 'list.Item' from each value found next to a
 // 'Host' option in the given 'content' slice of bytes.
+//
+// Lines are parsed one at a time while keeping track of the current 'Host'
+// block. Every alias on a 'Host' line becomes an item, except for wildcard
+// ('*', '?') and negated ('!') patterns as those can't be connected to
+// directly. The first 'HostName' of a block is attached to all of the
+// block's aliases and when the same alias appears in multiple blocks the
+// first 'HostName' obtained wins, mirroring how SSH itself applies options.
+// Whatever option line directly follows a 'HostName' will be used as
+// something that differentiates between two identical 'HostName' values.
 func findHosts(content []byte) []list.Item {
-	// Grab all 'Host' ('Host' not included), 'HostName' ('HostName' included),
-	// and whatever was right after 'HostName' if anything. That 'whatever' will
-	// be used as something that differentiates between two identical 'HostName'
-	// values.
-	pat := regexp.MustCompile(`(?m)^Host\s([^\*][a-zA-Z0-9_\.-]*)(\s+HostName[^\r\n][a-zA-Z0-9_\.-]+)?([\r\n][^\r\n].*)?`)
-	mainMatches := pat.FindAllStringSubmatch(string(content), -1)
+	var (
+		order    []string // Unique 'Host' values in order of appearance
+		entries  = make(map[string]*hostEntry)
+		aliases  []string // 'Host' values of the block being parsed
+		hostname string   // First 'HostName' value of the block being parsed
+		extra    string   // Option line directly after 'HostName'
+	)
 
-	// Map for checking whether host already exists
-	hostMapBool := make(map[string]bool)
-
-	// Make sure 'HostName' was defined correctly (i.e. followed by a space)
-	pat = regexp.MustCompile(`HostName\s(.*)`)
-	var items []list.Item
-	for _, m := range mainMatches {
-		// Use 'Host' value as a basis for checking duplicates
-		if _, ok := hostMapBool[m[1]]; ok {
-			continue
-		}
-
-		hostMapBool[m[1]] = true
-		// If 'HostName' was present
-		if m[2] != "" {
-			for _, n := range pat.FindAllStringSubmatch(m[2], -1) {
-				// 'm[3]' represents anything additional after 'HostName' limited to one line
-				items = append(items, Item{Host: m[1], Hostname: n[1], Extra: strings.TrimSpace(m[3])})
+	endBlock := func() {
+		for _, a := range aliases {
+			e, ok := entries[a]
+			if !ok {
+				e = &hostEntry{}
+				entries[a] = e
+				order = append(order, a)
 			}
+			if e.hostname == "" {
+				e.hostname = hostname
+				e.extra = extra
+			}
+		}
+		aliases, hostname, extra = nil, "", ""
+	}
+
+	lines := strings.Split(string(content), "\n")
+	for i, line := range lines {
+		keyword, value := splitOption(line)
+		switch {
+		case strings.EqualFold(keyword, "Host"):
+			endBlock()
+			for _, a := range strings.Fields(value) {
+				if strings.ContainsAny(a, "*?") || strings.HasPrefix(a, "!") {
+					continue
+				}
+				aliases = append(aliases, a)
+			}
+		case strings.EqualFold(keyword, "Match"):
+			// A 'Match' section ends any 'Host' block being parsed
+			endBlock()
+		case strings.EqualFold(keyword, "HostName") && len(aliases) > 0 && hostname == "" && value != "":
+			hostname = strings.Fields(value)[0]
+			if i+1 < len(lines) {
+				next, _ := splitOption(lines[i+1])
+				if next != "" && !strings.EqualFold(next, "Host") && !strings.EqualFold(next, "Match") {
+					extra = strings.TrimSpace(lines[i+1])
+				}
+			}
+		}
+	}
+	endBlock()
+
+	var items []list.Item
+	for _, a := range order {
+		e := entries[a]
+		if e.hostname != "" {
+			items = append(items, Item{Host: a, Hostname: e.hostname, Extra: e.extra})
 		} else {
-			items = append(items, Item{Host: m[1], Hostname: m[1]})
+			items = append(items, Item{Host: a, Hostname: a})
 		}
 	}
 
 	return items
+}
+
+// splitOption splits a configuration line into its keyword and value, which
+// may be separated by whitespace and/or a single '='. Blank lines and
+// comments yield an empty keyword.
+func splitOption(line string) (string, string) {
+	line = strings.TrimSpace(line)
+	if line == "" || line[0] == '#' {
+		return "", ""
+	}
+	sep := strings.IndexAny(line, " \t=")
+	if sep == -1 {
+		return line, ""
+	}
+	value := strings.TrimSpace(line[sep:])
+	value = strings.TrimSpace(strings.TrimPrefix(value, "="))
+	return line[:sep], value
 }
 
 // flatten returns a flattened slice from a multi-dimensional slice.

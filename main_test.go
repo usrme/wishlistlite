@@ -17,7 +17,7 @@ func TestSshConfigHosts(t *testing.T) {
 	}{
 		{"good", "testdata/good", 11},
 		{"commented", "testdata/commented", 2},
-		{"invalid", "testdata/invalid", 0},
+		{"invalid", "testdata/invalid", 1},
 		{"includedTop", "testdata/includedTop", 3},
 	}
 	for _, test := range cases {
@@ -56,8 +56,8 @@ func TestSshConfigHosts(t *testing.T) {
 		}
 
 		for i := range hosts {
-			if hosts[i].(Item).Host != expected[i].(Item).Host && hosts[i].(Item).Hostname != expected[i].(Item).Hostname {
-				t.Errorf("got %s, wanted %d", hosts[i], expected[i])
+			if hosts[i].(Item).Host != expected[i].(Item).Host || hosts[i].(Item).Hostname != expected[i].(Item).Hostname {
+				t.Errorf("got %s, wanted %s", hosts[i], expected[i])
 			}
 		}
 	})
@@ -265,9 +265,95 @@ func TestFindHosts(t *testing.T) {
 			t.Fatalf("got %d, wanted %d", len(items), len(expected))
 		}
 		for i := range items {
-			if items[i].(Item).Host != expected[i].(Item).Host && items[i].(Item).Hostname != expected[i].(Item).Hostname {
-				t.Errorf("got %s, wanted %d", items[i], expected[i])
+			if items[i].(Item).Host != expected[i].(Item).Host || items[i].(Item).Hostname != expected[i].(Item).Hostname {
+				t.Errorf("got %s, wanted %s", items[i], expected[i])
 			}
 		}
 	})
+	cases := []struct {
+		Description, Content string
+		Want                 []Item
+	}{
+		{
+			"adjacent blocks without blank lines",
+			"Host web\n\tHostName web.example.com\nHost db\n\tHostName db.example.com\n",
+			[]Item{
+				{Host: "web", Hostname: "web.example.com"},
+				{Host: "db", Hostname: "db.example.com"},
+			},
+		},
+		{
+			"consecutive hosts without options",
+			"Host foo\nHost bar\nHost baz\n",
+			[]Item{
+				{Host: "foo", Hostname: "foo"},
+				{Host: "bar", Hostname: "bar"},
+				{Host: "baz", Hostname: "baz"},
+			},
+		},
+		{
+			"wildcard and negated patterns are skipped",
+			"Host *\n\tUser admin\n\nHost prod-*\n\nHost ?db\n\nHost !negated\n",
+			nil,
+		},
+		{
+			"multiple aliases on one line",
+			"Host web1 web2 web3\n\tHostName web.example.com\n",
+			[]Item{
+				{Host: "web1", Hostname: "web.example.com"},
+				{Host: "web2", Hostname: "web.example.com"},
+				{Host: "web3", Hostname: "web.example.com"},
+			},
+		},
+		{
+			"hostname from a later block",
+			"Host multi\n\tUser someone\n\nHost multi\n\tHostName multi.local\n",
+			[]Item{
+				{Host: "multi", Hostname: "multi.local"},
+			},
+		},
+		{
+			"missing separator falls back to host",
+			"Host invalid\n  HostNameinvalid-because-no-spaces\n",
+			[]Item{
+				{Host: "invalid", Hostname: "invalid"},
+			},
+		},
+		{
+			"windows line endings",
+			"Host a\r\n\tHostName same.local\r\n\tPort 22\r\n\r\nHost b\r\n\tHostName same.local\r\n\tPort 23\r\n",
+			[]Item{
+				{Host: "a", Hostname: "same.local", Extra: "Port 22"},
+				{Host: "b", Hostname: "same.local", Extra: "Port 23"},
+			},
+		},
+		{
+			"case-insensitive keywords",
+			"host foo\n\thostname foo.local\n",
+			[]Item{
+				{Host: "foo", Hostname: "foo.local"},
+			},
+		},
+		{
+			"keyword and value separated by equals sign",
+			"Host=foo\n\tHostName = foo.local\n",
+			[]Item{
+				{Host: "foo", Hostname: "foo.local"},
+			},
+		},
+	}
+	for _, test := range cases {
+		t.Run(test.Description, func(t *testing.T) {
+			items := findHosts([]byte(test.Content))
+
+			if len(items) != len(test.Want) {
+				t.Fatalf("got %d, wanted %d", len(items), len(test.Want))
+			}
+			for i := range items {
+				if items[i].(Item) != test.Want[i] {
+					t.Errorf("got %v, wanted %v", items[i], test.Want[i])
+				}
+			}
+		})
+	}
 }
