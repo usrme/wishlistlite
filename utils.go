@@ -57,12 +57,12 @@ func iniHosts(filePath string, switchFilter bool) ([]list.Item, error) {
 		return nil, fmt.Errorf("could not read file '%s': %w", filePath, err)
 	}
 
-	items := findIniHosts(content, switchFilter)
+	items := findIniHosts(content, filePath, switchFilter)
 	return items, nil
 }
 
 // findIniHosts returns a slice of 'list.Item' from the given 'content' slice of bytes.
-func findIniHosts(content []byte, switchFilter bool) []list.Item {
+func findIniHosts(content []byte, filePath string, switchFilter bool) []list.Item {
 	// Grab all sections between brackets if they just contain letters and hyphens,
 	// and group all the lines after them.
 	pat := regexp.MustCompile(`(?m)^\[[a-zA-Z-]*\][\r\n]((?:[a-zA-Z0-9-_\.]+(?:[\r\n]|\s)?(?:ansible_host=[^\s]+\s)?.*[\r\n])+)`)
@@ -83,9 +83,9 @@ func findIniHosts(content []byte, switchFilter bool) []list.Item {
 			}
 			hostMapBool[n[1]] = true
 
-			i := Item{Host: n[1], Hostname: n[1], SwitchFilter: switchFilter}
+			i := Item{Host: n[1], Hostname: n[1], SwitchFilter: switchFilter, SourceFile: filePath}
 			if n[2] != "" {
-				i = Item{Host: n[2], Hostname: n[1], SwitchFilter: switchFilter}
+				i = Item{Host: n[2], Hostname: n[1], SwitchFilter: switchFilter, SourceFile: filePath}
 			}
 			items = append(items, i)
 		}
@@ -126,7 +126,7 @@ func sshConfigHosts(filePath string) ([]list.Item, error) {
 		}
 	}
 
-	items := findHosts(content)
+	items := findHosts(content, filePath)
 
 	// This should only trigger when at the top level, thus
 	// causing a return of all found hosts from the main file
@@ -201,6 +201,7 @@ func findIncludedFiles(content []byte) ([]string, int) {
 type hostEntry struct {
 	hostname string
 	extra    string
+	line     int
 }
 
 // findHosts returns a slice of 'list.Item' from each value found next to a
@@ -214,20 +215,25 @@ type hostEntry struct {
 // first 'HostName' obtained wins, mirroring how SSH itself applies options.
 // Whatever option line directly follows a 'HostName' will be used as
 // something that differentiates between two identical 'HostName' values.
-func findHosts(content []byte) []list.Item {
+//
+// Each item also records the given 'filePath' and the line number of the
+// 'Host' line it first appeared on, so that the source of a host can be
+// opened in an editor.
+func findHosts(content []byte, filePath string) []list.Item {
 	var (
-		order    []string // Unique 'Host' values in order of appearance
-		entries  = make(map[string]*hostEntry)
-		aliases  []string // 'Host' values of the block being parsed
-		hostname string   // First 'HostName' value of the block being parsed
-		extra    string   // Option line directly after 'HostName'
+		order     []string // Unique 'Host' values in order of appearance
+		entries   = make(map[string]*hostEntry)
+		aliases   []string // 'Host' values of the block being parsed
+		hostname  string   // First 'HostName' value of the block being parsed
+		extra     string   // Option line directly after 'HostName'
+		blockLine int      // Line number of the block's 'Host' line
 	)
 
 	endBlock := func() {
 		for _, a := range aliases {
 			e, ok := entries[a]
 			if !ok {
-				e = &hostEntry{}
+				e = &hostEntry{line: blockLine}
 				entries[a] = e
 				order = append(order, a)
 			}
@@ -245,6 +251,7 @@ func findHosts(content []byte) []list.Item {
 		switch {
 		case strings.EqualFold(keyword, "Host"):
 			endBlock()
+			blockLine = i + 1
 			for _, a := range strings.Fields(value) {
 				if strings.ContainsAny(a, "*?") || strings.HasPrefix(a, "!") {
 					continue
@@ -270,9 +277,9 @@ func findHosts(content []byte) []list.Item {
 	for _, a := range order {
 		e := entries[a]
 		if e.hostname != "" {
-			items = append(items, Item{Host: a, Hostname: e.hostname, Extra: e.extra})
+			items = append(items, Item{Host: a, Hostname: e.hostname, Extra: e.extra, SourceFile: filePath, SourceLine: e.line})
 		} else {
-			items = append(items, Item{Host: a, Hostname: a})
+			items = append(items, Item{Host: a, Hostname: a, SourceFile: filePath, SourceLine: e.line})
 		}
 	}
 

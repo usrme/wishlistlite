@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -37,12 +38,18 @@ var (
 )
 
 // An Item is an item that appears in the list.
+//
+// SourceFile and SourceLine point to where the item was read
+// from and are excluded from JSON so that the recently used
+// file doesn't record locations that may go stale.
 type Item struct {
 	Host         string
 	Hostname     string
 	Timestamp    string
 	Extra        string
 	SwitchFilter bool
+	SourceFile   string `json:"-"`
+	SourceLine   int    `json:"-"`
 }
 
 // Title returns the Host field for an Item as that is the
@@ -86,6 +93,10 @@ type connectionOutputMsg []string
 // A connectionErrorMsg indicates that something has
 // been written to the standard error of a connection.
 type connectionErrorMsg []string
+
+// An editorFinishedMsg indicates that the editor that was
+// opened for a host's source file has exited.
+type editorFinishedMsg struct{ err error }
 
 type model struct {
 	list             list.Model
@@ -144,6 +155,7 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []s
 		customKeys.Ping,
 		customKeys.Copy,
 		customKeys.CopyHost,
+		customKeys.Open,
 	}
 	// Make sure custom keys have help text available
 	hostList.AdditionalShortHelpKeys = func() []key.Binding { return bindings }
@@ -374,6 +386,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.connection.output = "Unable to copy"
 				}
 			}
+
+		case key.Matches(msg, customKeys.Open):
+			i, ok := m.list.SelectedItem().(Item)
+			if ok {
+				filePath, line := m.sourceOf(i)
+				if filePath == "" {
+					m.connection.state = "Opened"
+					m.connection.output = fmt.Sprintf("No source file known for %q", i.Host)
+				} else {
+					cmds = append(cmds, openEditor(filePath, line))
+				}
+			}
 		}
 
 	case connectionErrorMsg:
@@ -414,6 +438,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.connection.state = "Connected"
 			return m.recordConnection(m.list.SelectedItem().(Item))
 		}
+	case editorFinishedMsg:
+		if msg.err != nil {
+			m.connection.state = "Opened"
+			m.connection.output = fmt.Sprintf("Unable to open editor: %s", msg.err)
+		}
 	case spinner.TickMsg:
 		m.pingSpinner, cmd = m.pingSpinner.Update(msg)
 		cmds = append(cmds, cmd)
@@ -446,7 +475,7 @@ func (m model) View() tea.View {
 
 	if m.connection.state == "Pinging" {
 		m.list.NewStatusMessage(fmt.Sprintf("%s %s", m.pingSpinner.View(), versionStyle(fmt.Sprintf("Pinging %q %s times", m.list.SelectedItem().(Item).Host, m.pingOpts[len(m.pingOpts)-1]))))
-	} else if m.connection.state == "Pinged" || m.connection.state == "Copying" || m.connection.state == "Sorting" {
+	} else if m.connection.state == "Pinged" || m.connection.state == "Copying" || m.connection.state == "Sorting" || m.connection.state == "Opened" {
 		m.list.NewStatusMessage(versionStyle(m.connection.output))
 	} else {
 		m.list.NewStatusMessage(versionStyle(pkgVersion()))
@@ -489,6 +518,89 @@ func (m model) View() tea.View {
 	v := tea.NewView(style.Render(view))
 	v.AltScreen = true
 	return v
+}
+
+// sourceOf returns the source file and line the given item was read
+// from, falling back to looking the host up from the original items
+// when the item itself doesn't carry that information (e.g. when it
+// came from the recently used view).
+func (m model) sourceOf(i Item) (string, int) {
+	if i.SourceFile != "" {
+		return i.SourceFile, i.SourceLine
+	}
+	for _, it := range m.originalItems {
+		if o, ok := it.(Item); ok && o.Host == i.Host {
+			return o.SourceFile, o.SourceLine
+		}
+	}
+	return "", 0
+}
+
+// enterAltScreenSeq is the ANSI sequence for entering the terminal's
+// alternate screen, the same one Bubble Tea itself uses.
+const enterAltScreenSeq = "\x1b[?1049h"
+
+// An altScreenCommand wraps an 'exec.Cmd' so that the command runs in
+// the terminal's alternate screen: entered right before the command
+// starts and re-entered right after it exits. Without this the normal
+// screen's contents flash into view twice: once between Bubble Tea
+// releasing the terminal and the editor setting up its own alternate
+// screen, and once more when handing the terminal back.
+type altScreenCommand struct {
+	cmd    *exec.Cmd
+	output io.Writer
+}
+
+func (a *altScreenCommand) SetStdin(r io.Reader) {
+	if a.cmd.Stdin == nil {
+		a.cmd.Stdin = r
+	}
+}
+
+func (a *altScreenCommand) SetStdout(w io.Writer) {
+	a.output = w
+	if a.cmd.Stdout == nil {
+		a.cmd.Stdout = w
+	}
+}
+
+func (a *altScreenCommand) SetStderr(w io.Writer) {
+	if a.cmd.Stderr == nil {
+		a.cmd.Stderr = w
+	}
+}
+
+func (a *altScreenCommand) Run() error {
+	if a.output == nil {
+		a.output = os.Stdout
+	}
+	fmt.Fprint(a.output, enterAltScreenSeq)
+	err := a.cmd.Run()
+	fmt.Fprint(a.output, enterAltScreenSeq)
+	return err
+}
+
+// openEditor returns a command that opens the given file in the editor
+// set through the 'VISUAL' or 'EDITOR' environment variables and resumes
+// the program once the editor exits. A positive line number is passed
+// along in the '+n' form that at least Vim, Nano, Emacs, and micro all
+// understand.
+func openEditor(filePath string, line int) tea.Cmd {
+	editor := os.Getenv("VISUAL")
+	if editor == "" {
+		editor = os.Getenv("EDITOR")
+	}
+	if editor == "" {
+		editor = "vi"
+	}
+	var args []string
+	if line > 0 {
+		args = append(args, fmt.Sprintf("+%d", line))
+	}
+	args = append(args, filePath)
+	return tea.Exec(&altScreenCommand{cmd: exec.Command(editor, args...)}, func(err error) tea.Msg {
+		return editorFinishedMsg{err}
+	})
 }
 
 func (m model) quitProgram() (tea.Model, tea.Cmd) {

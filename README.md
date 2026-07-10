@@ -54,6 +54,8 @@ To delete entries from the recently connected view press the letter `d`, which w
 
 To copy a highlighted entry's 'HostName' value to the clipboard press the letter `c`; to copy its 'Host' value press the capital letter `C`. This works when viewing configuration entries and the recently connected to hosts.
 
+To open the file that a highlighted entry was read from press the letter `o`, which suspends the interface and opens the file in the editor set through the `VISUAL` or `EDITOR` environment variables (falling back to `vi`), right on the corresponding `Host` line. This also works for entries that came from `Include`-d files and from the recently connected to view, as long as the host is still present in the configuration.
+
 ### Caveats
 
 Wildcard (`*`, `?`) and negated (`!`) host patterns are excluded as those aren't hosts that can be connected to directly. The parsing is done line by line while keeping track of each `Host` block, so there may be edge cases with parsing, but I've tried to cover the most common cases with the included tests.

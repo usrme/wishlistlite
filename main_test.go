@@ -64,9 +64,9 @@ func TestSshConfigHosts(t *testing.T) {
 	t.Run("expected hosts 'includedTopLevel'", func(t *testing.T) {
 		var hosts []list.Item
 		expected := []list.Item{
-			Item{Host: "saturday", Hostname: "saturday.local"},
-			Item{Host: "sunday", Hostname: "sunday.local"},
-			Item{Host: "lodestar", Hostname: "lodestar.local"},
+			Item{Host: "saturday", Hostname: "saturday.local", SourceFile: "testdata/included1", SourceLine: 1},
+			Item{Host: "sunday", Hostname: "sunday.local", SourceFile: "testdata/included1", SourceLine: 4},
+			Item{Host: "lodestar", Hostname: "lodestar.local", SourceFile: "testdata/included1", SourceLine: 7},
 		}
 		hosts, err := sshConfigHosts("testdata/includedTop")
 
@@ -85,11 +85,11 @@ func TestSshConfigHosts(t *testing.T) {
 	t.Run("expected hosts 'inifile'", func(t *testing.T) {
 		var hosts []list.Item
 		expected := []list.Item{
-			Item{Host: "chat.local", Hostname: "chat"},
-			Item{Host: "turn.local", Hostname: "turn"},
-			Item{Host: "lieu.local", Hostname: "lieu.local"},
-			Item{Host: "vt.local", Hostname: "vt.local"},
-			Item{Host: "graph.local", Hostname: "graph"},
+			Item{Host: "chat.local", Hostname: "chat", SourceFile: "testdata/inifile"},
+			Item{Host: "turn.local", Hostname: "turn", SourceFile: "testdata/inifile"},
+			Item{Host: "lieu.local", Hostname: "lieu.local", SourceFile: "testdata/inifile"},
+			Item{Host: "vt.local", Hostname: "vt.local", SourceFile: "testdata/inifile"},
+			Item{Host: "graph.local", Hostname: "graph", SourceFile: "testdata/inifile"},
 		}
 		hosts, err := iniHosts("testdata/inifile", false)
 
@@ -260,7 +260,7 @@ func TestFindHosts(t *testing.T) {
 			Item{Host: "saturday2", Hostname: "saturday.local"},
 			Item{Host: "sunday", Hostname: "sunday.local"},
 		}
-		items := findHosts(content)
+		items := findHosts(content, "")
 		if len(items) != len(expected) {
 			t.Fatalf("got %d, wanted %d", len(items), len(expected))
 		}
@@ -278,17 +278,17 @@ func TestFindHosts(t *testing.T) {
 			"adjacent blocks without blank lines",
 			"Host web\n\tHostName web.example.com\nHost db\n\tHostName db.example.com\n",
 			[]Item{
-				{Host: "web", Hostname: "web.example.com"},
-				{Host: "db", Hostname: "db.example.com"},
+				{Host: "web", Hostname: "web.example.com", SourceLine: 1},
+				{Host: "db", Hostname: "db.example.com", SourceLine: 3},
 			},
 		},
 		{
 			"consecutive hosts without options",
 			"Host foo\nHost bar\nHost baz\n",
 			[]Item{
-				{Host: "foo", Hostname: "foo"},
-				{Host: "bar", Hostname: "bar"},
-				{Host: "baz", Hostname: "baz"},
+				{Host: "foo", Hostname: "foo", SourceLine: 1},
+				{Host: "bar", Hostname: "bar", SourceLine: 2},
+				{Host: "baz", Hostname: "baz", SourceLine: 3},
 			},
 		},
 		{
@@ -300,51 +300,51 @@ func TestFindHosts(t *testing.T) {
 			"multiple aliases on one line",
 			"Host web1 web2 web3\n\tHostName web.example.com\n",
 			[]Item{
-				{Host: "web1", Hostname: "web.example.com"},
-				{Host: "web2", Hostname: "web.example.com"},
-				{Host: "web3", Hostname: "web.example.com"},
+				{Host: "web1", Hostname: "web.example.com", SourceLine: 1},
+				{Host: "web2", Hostname: "web.example.com", SourceLine: 1},
+				{Host: "web3", Hostname: "web.example.com", SourceLine: 1},
 			},
 		},
 		{
 			"hostname from a later block",
 			"Host multi\n\tUser someone\n\nHost multi\n\tHostName multi.local\n",
 			[]Item{
-				{Host: "multi", Hostname: "multi.local"},
+				{Host: "multi", Hostname: "multi.local", SourceLine: 1},
 			},
 		},
 		{
 			"missing separator falls back to host",
 			"Host invalid\n  HostNameinvalid-because-no-spaces\n",
 			[]Item{
-				{Host: "invalid", Hostname: "invalid"},
+				{Host: "invalid", Hostname: "invalid", SourceLine: 1},
 			},
 		},
 		{
 			"windows line endings",
 			"Host a\r\n\tHostName same.local\r\n\tPort 22\r\n\r\nHost b\r\n\tHostName same.local\r\n\tPort 23\r\n",
 			[]Item{
-				{Host: "a", Hostname: "same.local", Extra: "Port 22"},
-				{Host: "b", Hostname: "same.local", Extra: "Port 23"},
+				{Host: "a", Hostname: "same.local", Extra: "Port 22", SourceLine: 1},
+				{Host: "b", Hostname: "same.local", Extra: "Port 23", SourceLine: 5},
 			},
 		},
 		{
 			"case-insensitive keywords",
 			"host foo\n\thostname foo.local\n",
 			[]Item{
-				{Host: "foo", Hostname: "foo.local"},
+				{Host: "foo", Hostname: "foo.local", SourceLine: 1},
 			},
 		},
 		{
 			"keyword and value separated by equals sign",
 			"Host=foo\n\tHostName = foo.local\n",
 			[]Item{
-				{Host: "foo", Hostname: "foo.local"},
+				{Host: "foo", Hostname: "foo.local", SourceLine: 1},
 			},
 		},
 	}
 	for _, test := range cases {
 		t.Run(test.Description, func(t *testing.T) {
-			items := findHosts([]byte(test.Content))
+			items := findHosts([]byte(test.Content), "")
 
 			if len(items) != len(test.Want) {
 				t.Fatalf("got %d, wanted %d", len(items), len(test.Want))
