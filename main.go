@@ -24,6 +24,8 @@ import (
 // sshExecutableName is the name of the SSH executable present on the local system.
 const sshExecutableName = "ssh"
 
+var version = ""
+
 func newPingOpts(count int) []string {
 	return []string{"-c", fmt.Sprint(count)}
 }
