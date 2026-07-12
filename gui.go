@@ -81,6 +81,7 @@ func (i Item) FilterValue() string {
 // A connection stores information about a successful
 // connection that was made against a chosen host.
 type connection struct {
+	item        Item
 	output      string
 	startupTime time.Duration
 	state       string
@@ -345,14 +346,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, customKeys.Connect):
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
-				m.connection.state = "Connecting"
-				m.choice = i.Host
-				cmds = append(cmds, m.spinner.Tick)
-				cmds = append(cmds, m.stopwatch.Init())
-				// Extremely hack-y way to prepend 'm.choice'
-				opts := append([]string{m.choice}, m.sshOpts...)
-				opts = append(opts, sshControlParentOpts...)
-				cmds = append(cmds, execCommand(m.outputChan, m.errorChan, sshExecutableName, 0, false, opts...))
+				return m.connect(i)
 			}
 
 		case key.Matches(msg, customKeys.Sort):
@@ -407,7 +401,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, waitForCommandError(m.errorChan)) // Continue waiting for new errors
 		} else if m.connection.state == "Connecting" {
 			m.connection.state = "Pinged"
-			m.connection.output = fmt.Sprintf("%q %s", m.list.SelectedItem().(Item).Host, strings.Split(strings.Join(msg, ""), "\r\n")[0])
+			m.connection.output = fmt.Sprintf("%q %s", m.connection.item.Host, strings.Split(strings.Join(msg, ""), "\r\n")[0])
 			cmds = append(cmds, m.stopwatch.Stop())
 			cmds = append(cmds, m.stopwatch.Reset())
 			cmds = append(cmds, waitForCommandError(m.errorChan)) // Continue waiting for new errors
@@ -436,7 +430,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.connection.output = strings.Join(msg, "\n")
 			m.connection.startupTime = m.stopwatch.Elapsed()
 			m.connection.state = "Connected"
-			return m.recordConnection(m.list.SelectedItem().(Item))
+			return m.recordConnection(m.connection.item)
 		}
 	case editorFinishedMsg:
 		if msg.err != nil {
@@ -603,6 +597,24 @@ func openEditor(filePath string, line int) tea.Cmd {
 	})
 }
 
+// connect switches the model into the Connecting state and starts
+// a background master connection to the given item's host so that
+// the time until an interactive connection is possible can be
+// measured.
+func (m model) connect(i Item) (tea.Model, tea.Cmd) {
+	m.connection.state = "Connecting"
+	m.connection.item = i
+	m.choice = i.Host
+	// Extremely hack-y way to prepend 'm.choice'
+	opts := append([]string{m.choice}, m.sshOpts...)
+	opts = append(opts, sshControlParentOpts...)
+	return m, tea.Batch(
+		m.spinner.Tick,
+		m.stopwatch.Init(),
+		execCommand(m.outputChan, m.errorChan, sshExecutableName, 0, false, opts...),
+	)
+}
+
 func (m model) quitProgram() (tea.Model, tea.Cmd) {
 	// Clear the output just in case something was stored
 	m.connection.output = ""
@@ -621,9 +633,13 @@ func (m model) updateCustomInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.connectInput.Blur()
 			m.list.SetDelegate(m.defaultDelegate)
 		case "enter":
-			m.choice = m.connectInput.Value()
-			i := Item{Host: m.choice, Hostname: m.choice}
-			return m.recordConnection(i)
+			host := m.connectInput.Value()
+			if host == "" {
+				return m, nil
+			}
+			m.connectInput.Blur()
+			m.list.SetDelegate(m.defaultDelegate)
+			return m.connect(Item{Host: host, Hostname: host})
 		}
 	}
 	var cmd tea.Cmd
