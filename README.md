@@ -2,7 +2,6 @@
 
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/usrme/wishlistlite)
 [![test](https://github.com/usrme/wishlistlite/actions/workflows/test.yml/badge.svg)](https://github.com/usrme/wishlistlite/actions/workflows/test.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/usrme/wishlistlite)](https://goreportcard.com/report/github.com/usrme/wishlistlite)
 
 The lesser SSH directory (though maybe not so much anymore) ✨
 
