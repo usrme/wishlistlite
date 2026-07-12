@@ -286,6 +286,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateCustomInput(msg)
 	}
 
+	// When the full error view is being shown any keypress
+	// other than Ctrl+C returns to the list
+	if m.connection.state == "Errored" {
+		if k, ok := msg.(tea.KeyPressMsg); ok {
+			if k.String() == "ctrl+c" {
+				return m.quitProgram()
+			}
+			m.connection.state = ""
+			m.connection.output = ""
+			m.choice = ""
+			return m, nil
+		}
+	}
+
 	if m.sorted && m.list.FilterState() != list.Filtering {
 		switch msg := msg.(type) {
 		case tea.KeyPressMsg:
@@ -400,8 +414,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.connection.output = fmt.Sprintf("%q %s", m.list.SelectedItem().(Item).Host, strings.Split(strings.Join(msg, ""), "\n")[0])
 			cmds = append(cmds, waitForCommandError(m.errorChan)) // Continue waiting for new errors
 		} else if m.connection.state == "Connecting" {
-			m.connection.state = "Pinged"
-			m.connection.output = fmt.Sprintf("%q %s", m.connection.item.Host, strings.Split(strings.Join(msg, ""), "\r\n")[0])
+			m.connection.state = "Errored"
+			m.connection.output = strings.Join(msg, "")
 			cmds = append(cmds, m.stopwatch.Stop())
 			cmds = append(cmds, m.stopwatch.Reset())
 			cmds = append(cmds, waitForCommandError(m.errorChan)) // Continue waiting for new errors
@@ -461,6 +475,16 @@ func (m model) View() tea.View {
 
 	if m.connection.state == "Connecting" {
 		v := tea.NewView(fmt.Sprintf("\n\n   %s Connecting... %s\n\n", m.spinner.View(), m.stopwatch.View()))
+		v.AltScreen = true
+		return v
+	} else if m.connection.state == "Errored" {
+		errView := fmt.Sprintf(
+			"Unable to connect to %q:\n\n%s\n\n%s",
+			m.connection.item.Host,
+			strings.TrimSpace(m.connection.output),
+			versionStyle("Press any key to return"),
+		)
+		v := tea.NewView(docStyle.Width(m.list.Width()).Render(errView))
 		v.AltScreen = true
 		return v
 	} else if m.connection.state == "Connected" {
