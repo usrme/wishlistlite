@@ -214,7 +214,8 @@ func execCommand(outChan chan []string, errChan chan []string, name string, line
 		c.Start()
 
 		slurp, _ := io.ReadAll(stderr)
-		if len(slurp) > 0 {
+		warnings, ok := benignStderr(string(slurp))
+		if !ok {
 			slurp := strings.Split(string(slurp), "")
 			errChan <- connectionErrorMsg(slurp)
 			return tea.Quit
@@ -231,12 +232,52 @@ func execCommand(outChan chan []string, errChan chan []string, name string, line
 		if lineTail > 0 {
 			out = out[len(out)-lineTail:]
 		}
+		out = append(warnings, out...)
 		outChan <- connectionOutputMsg(out)
 		if wait {
 			c.Wait()
 		}
 		return nil
 	}
+}
+
+// benignStderrPrefixes are prefixes of lines SSH may write to
+// standard error on successful connections that should be passed
+// along with the regular output rather than be treated as errors.
+var benignStderrPrefixes = []string{
+	"Warning: Permanently added",
+}
+
+// benignStderr reports whether everything a command wrote to
+// standard error is harmless, i.e. lines matching one of the
+// 'benignStderrPrefixes' such as the "Permanently added ... to
+// the list of known hosts" warning. When it is, those lines are
+// returned so they can be passed along with the regular output
+// the way SSH itself would show them. Any other content means a
+// real error and the full stderr should be surfaced instead.
+func benignStderr(stderr string) ([]string, bool) {
+	if stderr == "" {
+		return nil, true
+	}
+	var warnings []string
+	for _, line := range strings.Split(strings.TrimSuffix(stderr, "\n"), "\n") {
+		if !hasBenignPrefix(line) {
+			return nil, false
+		}
+		warnings = append(warnings, line)
+	}
+	return warnings, true
+}
+
+// hasBenignPrefix reports whether a line of standard error starts
+// with any of the 'benignStderrPrefixes'.
+func hasBenignPrefix(line string) bool {
+	for _, prefix := range benignStderrPrefixes {
+		if strings.HasPrefix(line, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // waitForCommandError returns a tea.Cmd that waits for

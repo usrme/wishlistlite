@@ -357,3 +357,48 @@ func TestFindHosts(t *testing.T) {
 		})
 	}
 }
+
+func TestBenignStderr(t *testing.T) {
+	cases := []struct {
+		Description, Stderr string
+		WantWarnings        []string
+		WantBenign          bool
+	}{
+		{"empty", "", nil, true},
+		{
+			"known hosts warning only",
+			"Warning: Permanently added '10.16.0.34' (ED25519) to the list of known hosts.\n",
+			[]string{"Warning: Permanently added '10.16.0.34' (ED25519) to the list of known hosts."},
+			true,
+		},
+		{
+			"real error",
+			"ssh: connect to host 10.16.0.34 port 22: Connection refused\n",
+			nil,
+			false,
+		},
+		{
+			"warning mixed with real error",
+			"Warning: Permanently added '10.16.0.34' (ED25519) to the list of known hosts.\nssh: connect to host 10.16.0.34 port 22: Connection refused\n",
+			nil,
+			false,
+		},
+	}
+	for _, test := range cases {
+		t.Run(test.Description, func(t *testing.T) {
+			warnings, benign := benignStderr(test.Stderr)
+
+			if benign != test.WantBenign {
+				t.Errorf("got benign %t, wanted %t", benign, test.WantBenign)
+			}
+			if len(warnings) != len(test.WantWarnings) {
+				t.Fatalf("got %d warnings, wanted %d", len(warnings), len(test.WantWarnings))
+			}
+			for i := range warnings {
+				if warnings[i] != test.WantWarnings[i] {
+					t.Errorf("got %q, wanted %q", warnings[i], test.WantWarnings[i])
+				}
+			}
+		})
+	}
+}
