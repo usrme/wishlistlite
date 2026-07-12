@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
@@ -30,7 +31,13 @@ func newPingOpts(count int) []string {
 	return []string{"-c", fmt.Sprint(count)}
 }
 
-func getSshControlPath() string {
+// getSshControlDir returns the directory the SSH control socket
+// is placed in. On macOS that is /tmp rather than the per-user
+// $TMPDIR: SSH binds the socket at the control path plus a
+// 17-character temporary suffix, and $TMPDIR's long /var/folders
+// prefix pushes that past the 104-byte Unix socket path limit.
+// Elsewhere it is the memory-backed /dev/shm.
+func getSshControlDir() string {
 	if runtime.GOOS == "darwin" {
 		return "/tmp"
 	}
@@ -41,11 +48,16 @@ func getSshControlPath() string {
 var (
 	defaultSshConfigPath    = expandTilde("~/.ssh/config")
 	defaultRecentlyUsedPath = expandTilde("~/.ssh/recent.json")
-	sshControlPath          = fmt.Sprintf("%s/control:%s", getSshControlPath(), "%h:%p:%r")
-	sshControlChildOpts     = []string{"-S", sshControlPath}
-	sshControlParentOpts    = []string{"-T", "-o", "ControlMaster=auto", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
-	defaultPingCount        = 4
-	pingOpts                = newPingOpts(defaultPingCount)
+	// The '%C' token is a hash of the connection details, which keeps
+	// host and user names out of the directory listing and gives the
+	// path a fixed length that long hostnames can't push over the
+	// Unix socket length limit. SSH itself creates the socket with
+	// owner-only permissions.
+	sshControlPath       = filepath.Join(getSshControlDir(), "control-%C")
+	sshControlChildOpts  = []string{"-S", sshControlPath}
+	sshControlParentOpts = []string{"-T", "-o", "ControlMaster=auto", "-o", "ControlPersist=5s", "-o", fmt.Sprintf("ControlPath=%s", sshControlPath)}
+	defaultPingCount     = 4
+	pingOpts             = newPingOpts(defaultPingCount)
 )
 
 func main() {
