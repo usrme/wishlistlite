@@ -70,12 +70,18 @@ func (i Item) Description() string {
 }
 
 // FilterValue returns the value that is used when
-// filtering the list.
+// filtering the list. Both the Host and Hostname fields
+// are searchable, except with SwitchFilter set only the
+// Hostname is. The Host field comes first so that match
+// highlighting lines up with the rendered title.
 func (i Item) FilterValue() string {
 	if i.SwitchFilter {
 		return i.Hostname
 	}
-	return i.Host
+	if i.Hostname == "" || i.Hostname == i.Host {
+		return i.Host
+	}
+	return fmt.Sprintf("%s %s", i.Host, i.Hostname)
 }
 
 // A connection stores information about a successful

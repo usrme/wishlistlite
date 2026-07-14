@@ -358,6 +358,28 @@ func TestFindHosts(t *testing.T) {
 	}
 }
 
+func TestFilterValue(t *testing.T) {
+	cases := []struct {
+		Description string
+		Item        Item
+		Want        string
+	}{
+		{"host and hostname", Item{Host: "web1", Hostname: "10.16.0.34"}, "web1 10.16.0.34"},
+		{"identical host and hostname", Item{Host: "only.host", Hostname: "only.host"}, "only.host"},
+		{"empty hostname", Item{Host: "adhoc"}, "adhoc"},
+		{"switched filter", Item{Host: "web1", Hostname: "10.16.0.34", SwitchFilter: true}, "10.16.0.34"},
+	}
+	for _, test := range cases {
+		t.Run(test.Description, func(t *testing.T) {
+			got := test.Item.FilterValue()
+
+			if got != test.Want {
+				t.Errorf("got %q, wanted %q", got, test.Want)
+			}
+		})
+	}
+}
+
 func TestBenignStderr(t *testing.T) {
 	cases := []struct {
 		Description, Stderr string
