@@ -101,6 +101,10 @@ type connectionOutputMsg []string
 // been written to the standard error of a connection.
 type connectionErrorMsg []string
 
+// A controlPathCopiedMsg carries the status message that is shown
+// after trying to copy a host's open SSH control socket path.
+type controlPathCopiedMsg string
+
 // An editorFinishedMsg indicates that the editor that was
 // opened for a host's source file has exited.
 type editorFinishedMsg struct{ err error }
@@ -162,6 +166,7 @@ func newModel(items, sortedItems []list.Item, path string, pingOpts, sshOpts []s
 		customKeys.Ping,
 		customKeys.Copy,
 		customKeys.CopyHost,
+		customKeys.CopyPath,
 		customKeys.Open,
 	}
 	// Make sure custom keys have help text available
@@ -442,6 +447,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+		case key.Matches(msg, customKeys.CopyPath):
+			i, ok := m.list.SelectedItem().(Item)
+			if ok {
+				cmds = append(cmds, copyControlPath(i.Host, m.sshOpts))
+			}
+
 		case key.Matches(msg, customKeys.Open):
 			i, ok := m.list.SelectedItem().(Item)
 			if ok {
@@ -493,6 +504,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.connection.state = "Connected"
 			return m.recordConnection(m.connection.item)
 		}
+	case controlPathCopiedMsg:
+		m.connection.state = "Copying"
+		m.connection.output = string(msg)
 	case editorFinishedMsg:
 		if msg.err != nil {
 			m.connection.state = "Opened"
@@ -666,6 +680,35 @@ func openEditor(filePath string, line int) tea.Cmd {
 	return tea.Exec(&altScreenCommand{cmd: exec.Command(editor, args...)}, func(err error) tea.Msg {
 		return editorFinishedMsg{err}
 	})
+}
+
+// copyControlPath returns a command that resolves the SSH control socket
+// path for the given host and copies it to the clipboard when a master
+// connection is open on it. The path is resolved through 'ssh -G' as the
+// '%C' token depends on the final user, host name, and port
+func copyControlPath(host string, sshOpts []string) tea.Cmd {
+	return func() tea.Msg {
+		args := append([]string{"-G"}, sshOpts...)
+		args = append(args, "-o", fmt.Sprintf("ControlPath=%s", sshControlPath), host)
+		out, err := exec.Command(sshExecutableName, args...).Output()
+		if err != nil {
+			return controlPathCopiedMsg(fmt.Sprintf("Unable to resolve ControlPath for %q", host))
+		}
+		path := parseControlPath(string(out))
+		if path == "" {
+			return controlPathCopiedMsg(fmt.Sprintf("Unable to resolve ControlPath for %q", host))
+		}
+		// Make sure a master connection is listening on the socket and
+		// that it isn't a stale file left behind
+		check := exec.Command(sshExecutableName, "-O", "check", "-o", fmt.Sprintf("ControlPath=%s", path), host)
+		if check.Run() != nil {
+			return controlPathCopiedMsg(fmt.Sprintf("No open ControlPath for %q", host))
+		}
+		if clipboard.WriteAll(path) != nil {
+			return controlPathCopiedMsg("Unable to copy")
+		}
+		return controlPathCopiedMsg(fmt.Sprintf("Copied %q to clipboard", path))
+	}
 }
 
 // connect switches the model into the Connecting state and starts

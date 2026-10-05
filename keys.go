@@ -11,6 +11,7 @@ type customKeyMap struct {
 	Ping     key.Binding
 	Copy     key.Binding
 	CopyHost key.Binding
+	CopyPath key.Binding
 	Open     key.Binding
 }
 
@@ -46,6 +47,10 @@ var customKeys = customKeyMap{
 	CopyHost: key.NewBinding(
 		key.WithKeys("C"),
 		key.WithHelp("C", "copy 'Host'"),
+	),
+	CopyPath: key.NewBinding(
+		key.WithKeys("s"),
+		key.WithHelp("s", "copy 'ControlPath'"),
 	),
 	Open: key.NewBinding(
 		key.WithKeys("o"),

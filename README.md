@@ -53,6 +53,8 @@ To delete entries from the recently connected view press the letter `d`, which w
 
 To copy a highlighted entry's 'HostName' value to the clipboard press the letter `c`; to copy its 'Host' value press the capital letter `C`. This works when viewing configuration entries and the recently connected to hosts.
 
+To copy the path of a highlighted entry's open SSH control socket (see ['ControlPath'](https://www.mankier.com/5/ssh_config#ControlPath)) to the clipboard press the letter `s`. When no master connection is open for that entry a message is shown instead.
+
 To open the file that a highlighted entry was read from press the letter `o`, which suspends the interface and opens the file in the editor set through the `VISUAL` or `EDITOR` environment variables (falling back to `vi`), right on the corresponding `Host` line. This also works for entries that came from `Include`-d files and from the recently connected to view, as long as the host is still present in the configuration.
 
 ### Caveats

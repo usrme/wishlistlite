@@ -303,6 +303,18 @@ func splitOption(line string) (string, string) {
 	return line[:sep], value
 }
 
+// parseControlPath returns the value of the 'controlpath' option from
+// the output of 'ssh -G' or an empty string when it isn't set
+func parseControlPath(output string) string {
+	for _, line := range strings.Split(output, "\n") {
+		name, value := splitOption(line)
+		if strings.EqualFold(name, "controlpath") && value != "none" {
+			return value
+		}
+	}
+	return ""
+}
+
 // flatten returns a flattened slice from a multi-dimensional slice.
 func flatten[T any](lists [][]T) []T {
 	var res []T

@@ -424,3 +424,22 @@ func TestBenignStderr(t *testing.T) {
 		})
 	}
 }
+
+func TestParseControlPath(t *testing.T) {
+	tests := []struct {
+		name   string
+		output string
+		want   string
+	}{
+		{"set", "user me\ncontrolpath /tmp/control-abc\nport 22\n", "/tmp/control-abc"},
+		{"none", "controlpath none\n", ""},
+		{"missing", "user me\nport 22\n", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := parseControlPath(tt.output); got != tt.want {
+				t.Errorf("parseControlPath() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
