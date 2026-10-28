@@ -443,3 +443,22 @@ func TestParseControlPath(t *testing.T) {
 		})
 	}
 }
+
+func TestSshCommandArgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		command []string
+		want    []string
+	}{
+		{"ssh", []string{"ssh"}, append([]string{"ssh", "host"}, sshControlChildOpts...)},
+		{"ghostty", []string{"ghostty", "+ssh", "--"}, append([]string{"ghostty", "+ssh", "--", "host"}, sshControlChildOpts...)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sshCommandArgs(tt.command, "host")
+			if strings.Join(got, " ") != strings.Join(tt.want, " ") {
+				t.Errorf("sshCommandArgs() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

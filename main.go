@@ -60,6 +60,14 @@ var (
 	pingOpts             = newPingOpts(defaultPingCount)
 )
 
+// sshCommandArgs returns the arguments, including the command itself, for the
+// final interactive SSH connection to 'host' through the control socket
+func sshCommandArgs(command []string, host string) []string {
+	args := append([]string{}, command...)
+	args = append(args, host)
+	return append(args, sshControlChildOpts...)
+}
+
 func main() {
 	sshConfigPath := flag.String("sshconfigpath", defaultSshConfigPath, "Path to SSH configuration file")
 	recentlyUsedPath := flag.String("recentlyusedpath", defaultRecentlyUsedPath, "Path to recent SSH connections file")
@@ -67,15 +75,25 @@ func main() {
 	switchFilter := flag.Bool("switchfilter", false, "Whether or not to switch filter value from host to hostname")
 	pingCount := flag.Int("pingcount", defaultPingCount, "Number of times a host should be pinged")
 	sshOpts := flag.String("sshoptions", "", "Additional options passed to SSH. Must be contained in quotes")
+	sshCommand := flag.String("sshcommand", sshExecutableName, "Command used for the final interactive SSH connection (e.g. \"ghostty +ssh --\"). Must be contained in quotes")
 	flag.Parse()
 
 	if *pingCount != defaultPingCount {
 		pingOpts = newPingOpts(*pingCount)
 	}
 
-	sshExecutablePath, err := exec.LookPath(sshExecutableName)
+	_, err := exec.LookPath(sshExecutableName)
 	// Using 'panic()' as it's supposedly acceptable during initialization phases:
 	// https://go.dev/doc/effective_go#panic
+	if err != nil {
+		panic(err)
+	}
+
+	sshCommandFields := strings.Fields(*sshCommand)
+	if len(sshCommandFields) == 0 {
+		sshCommandFields = []string{sshExecutableName}
+	}
+	sshCommandPath, err := exec.LookPath(sshCommandFields[0])
 	if err != nil {
 		panic(err)
 	}
@@ -115,8 +133,8 @@ func main() {
 		fmt.Printf("Connected in %v\n", m.connection.startupTime)
 		fmt.Println(m.connection.output)
 
-		args := append([]string{sshExecutableName, m.choice}, sshControlChildOpts...)
-		err := syscall.Exec(sshExecutablePath, args, os.Environ())
+		args := sshCommandArgs(sshCommandFields, m.choice)
+		err := syscall.Exec(sshCommandPath, args, os.Environ())
 		if err != nil {
 			fmt.Println("unable to run executable: %w", err)
 			os.Exit(1)

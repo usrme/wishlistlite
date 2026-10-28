@@ -57,6 +57,14 @@ To copy the path of a highlighted entry's open SSH control socket (see ['Control
 
 To open the file that a highlighted entry was read from press the letter `o`, which suspends the interface and opens the file in the editor set through the `VISUAL` or `EDITOR` environment variables (falling back to `vi`), right on the corresponding `Host` line. This also works for entries that came from `Include`-d files and from the recently connected to view, as long as the host is still present in the configuration.
 
+To run the final interactive connection through a different command, pass it with the `-sshcommand` flag. For example, use [Ghostty's SSH integration](https://ghostty.org/docs/install/release-notes/1-4-0#ssh-integration-with-ghostty-+ssh) to install its terminfo on the remote host and forward its environment variables:
+
+```console
+wishlistlite -sshcommand "ghostty +ssh --"
+```
+
+The command must be in your `PATH` or given as a full path (e.g. `/Applications/Ghostty.app/Contents/MacOS/ghostty` on macOS). The background connection that measures the connection time still uses `ssh`.
+
 ### Caveats
 
 Wildcard (`*`, `?`) and negated (`!`) host patterns are excluded as those aren't hosts that can be connected to directly. The parsing is done line by line while keeping track of each `Host` block, so there may be edge cases with parsing, but I've tried to cover the most common cases with the included tests.
